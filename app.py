@@ -281,7 +281,7 @@ with tab_monte_carlo:
         sim_packet_loss = np.random.beta(a=2, b=50) * (packet_loss_rate + 0.05)
         sim_continuity = np.random.beta(a=95, b=5)
         
-        sim_f_L = max(0.0, min(1.0, (L_max - sim_latency) / (L_max - l_threshold_ms)))
+        sim_f_L = max(0.0, min(1.0, (config.L_MAX - sim_latency) / (config.L_MAX - l_threshold_ms)))
         sim_availability = max(0.0, 1.0 - sim_packet_loss)
         sim_integrity = integrity # Assume integrity is stable from test data
         
