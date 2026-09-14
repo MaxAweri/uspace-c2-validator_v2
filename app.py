@@ -247,7 +247,7 @@ with tab_summary:
 with tab_sensitivity:
     st.subheader(t["bottleneck_localization"])
     delta = config.SENSITIVITY_DELTA
-    f_L_perturbed = max(0.0, min(1.0, (config.L_MAX - mean_latency*(1 + delta)) / (L_max - l_threshold_ms)))
+    f_L_perturbed = max(0.0, min(1.0, (config.L_MAX - mean_latency*(1 + delta)) / (config.L_MAX - l_threshold_ms)))
     R_C2_lat_change = (w_A*availability + w_C*continuity + w_L*f_L_perturbed + w_I*integrity) - R_C2
     avail_perturbed = max(0.0, 1.0 - packet_loss_rate*(1 + delta))
     R_C2_loss_change = (w_A*avail_perturbed + w_C*continuity + w_L*f_L + w_I*integrity) - R_C2
