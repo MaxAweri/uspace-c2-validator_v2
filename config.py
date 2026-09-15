@@ -7,8 +7,53 @@ OUTAGE_THRESHOLD_MS = 2000
 SENSITIVITY_DELTA = 0.10
 R_C2_THRESHOLD_PCT = 80.0
 
+# Metric Target Thresholds
+AVAILABILITY_TARGET = 0.98  # Research/Engineering target
+CONTINUITY_TARGET = 0.99    # Research/Engineering target
+INTEGRITY_TARGET = 0.995    # Research/Engineering target
+COMPLETENESS_TARGET = INTEGRITY_TARGET  # 0.995 (99.5% цільова повнота телеметрії)
+LATENCY_TARGET_MS = 500.0   # 500 ms
+
+# Verdict Status Constants
+STATUS_PASS = "PASS (Технічним критеріям відповідає)"
+STATUS_CONDITIONAL = "CONDITIONAL (Потребує додаткових даних або усунення завад)"
+STATUS_FAIL = "FAIL (Критичні критерії не виконано)"
+STATUS_NOT_ASSESSABLE = "NOT ASSESSABLE (Недостатньо даних у логу)"
+
 WEIGHTS_SAIL_II = (0.35, 0.25, 0.25, 0.15)
 WEIGHTS_SAIL_IV = (0.25, 0.30, 0.25, 0.20)
+
+# Configuration Validation Constants
+MIN_OUTAGE_GAP_S = 2.0
+
+# Parameter Metadata with Sources and Provenance
+PARAMETER_METADATA = {
+    "AVAILABILITY_TARGET": {
+        "value": 0.98,
+        "source": "Research/Engineering target",
+        "provenance": "Derived from U-space operational requirements analysis"
+    },
+    "CONTINUITY_TARGET": {
+        "value": 0.99,
+        "source": "Research/Engineering target",
+        "provenance": "Based on SORA 2.5 continuity requirements for SAIL II-IV operations"
+    },
+    "INTEGRITY_TARGET": {
+        "value": 0.995,
+        "source": "Research/Engineering target",
+        "provenance": "Derived from U-space packet delivery integrity requirements"
+    },
+    "L_MAX": {
+        "value": 5000.0,
+        "source": "Upper degradation bound",
+        "provenance": "Engineering assumption for latency normalization function"
+    },
+    "LATENCY_TARGET_MS": {
+        "value": 500.0,
+        "source": "U-space regulatory threshold",
+        "provenance": "EU Regulation 2021/664 U-space performance requirements"
+    }
+}
 
 # -----------------------------------------------------------------------------
 # INTERNATIONALIZATION (i18n) DICTIONARY
@@ -16,7 +61,7 @@ WEIGHTS_SAIL_IV = (0.25, 0.30, 0.25, 0.20)
 TRANSLATIONS = {
     "Українська": {
         "language_selector": "🌐 Мова / Language",
-        "main_header": "🛸 U-space C2 Readiness Diagnostic Validator",
+        "main_header": "🛸 U-space C2 Technical Readiness Screening Tool",
         "sub_header": "B2B передпольотна експрес-діагностика та аналіз \"вузьких місць\" C2-лінку БАС (за вимогами Regulation EU 2021/664)",
         "sidebar_header": "⚙️ Вхідні параметри та сценарій",
         "file_upload": "📁 Завантажити лог телеметрії (CSV)",
@@ -35,8 +80,8 @@ TRANSLATIONS = {
         "readiness_level": "Рівень готовності C2-лінку",
         "threshold_text": "від порогу (80%)",
         "verdict_header": "Вердикт передпольотного тестування",
-        "approved": "✅ APPROVED — C2-лінк готовий до виконання місії у коридорі {:.0f} м",
-        "rejected": "🚨 REJECTED — ВИЯВЛЕНО ВУЗЬКЕ МІСЦЕ (BOTTLENECK)",
+        "approved": "✅ PASS — C2-лінк готовий до виконання місії у коридорі {:.0f} м",
+        "rejected": "🚨 FAIL — ВИЯВЛЕНО ВУЗЬКЕ МІСЦЕ (BOTTLENECK)",
         "availability": "Доступність (Availability)",
         "continuity": "Безперервність (Continuity)",
         "latency": "Затримка (P95 Latency)",
@@ -44,6 +89,10 @@ TRANSLATIONS = {
         "availability_target": "Ціль: >98.0%",
         "continuity_target": "Ціль: >99.0%",
         "integrity_target": "Ціль: >99.5%",
+        "availability_help": "Відсоток часу, протягом якого C2-канал підключений та готовий до передачі даних.",
+        "continuity_help": "Ймовірність збереження з'єднання без незапланованих розривів чи збоїв хендоверу під час місії.",
+        "integrity_help": "Частка пакетів, доставлених вчасно (затримка ≤ L_max), без втрат та спотворень.",
+        "latency_help": "95-й перцентиль затримки. 95% пакетів доставлені швидше за вказаний час.",
         "tab_analysis": "📊 Ботлнек-Аналіз та Графіки",
         "tab_sensitivity": "🔬 Аналіз Чутливості (Sensitivity)",
         "tab_telemetry": "🗺️ Лог та Маршрут Місії",
@@ -66,7 +115,7 @@ TRANSLATIONS = {
     },
     "English": {
         "language_selector": "🌐 Language / Мова",
-        "main_header": "🛸 U-space C2 Readiness Diagnostic Validator",
+        "main_header": "🛸 U-space C2 Technical Readiness Screening Tool",
         "sub_header": "B2B pre-flight express diagnostics and C2-link bottleneck analysis for UAS (Regulation EU 2021/664)",
         "sidebar_header": "⚙️ Input Parameters and Scenario",
         "file_upload": "📁 Upload Telemetry Log (CSV)",
@@ -85,8 +134,8 @@ TRANSLATIONS = {
         "readiness_level": "C2-Link Readiness Level",
         "threshold_text": "from threshold (80%)",
         "verdict_header": "Pre-flight Testing Verdict",
-        "approved": "✅ APPROVED — C2-link ready for mission in {:.0f} m corridor",
-        "rejected": "🚨 REJECTED — BOTTLENECK DETECTED",
+        "approved": "✅ PASS — C2-link ready for mission in {:.0f} m corridor",
+        "rejected": "🚨 FAIL — BOTTLENECK DETECTED",
         "availability": "Availability",
         "continuity": "Continuity",
         "latency": "P95 Latency",
@@ -94,6 +143,10 @@ TRANSLATIONS = {
         "availability_target": "Target: >98.0%",
         "continuity_target": "Target: >99.0%",
         "integrity_target": "Target: >99.5%",
+        "availability_help": "Percentage of operational time during which the C2 link is connected and ready for data transmission.",
+        "continuity_help": "Probability of maintaining the link without unintended terminations or handover failures during the mission.",
+        "integrity_help": "Ratio of packets delivered within deadline (latency ≤ L_max), without loss or corruption.",
+        "latency_help": "95th percentile latency. 95% of packets were delivered faster than this duration.",
         "tab_analysis": "📊 Bottleneck Analysis & Charts",
         "tab_sensitivity": "🔬 Sensitivity Analysis",
         "tab_telemetry": "🗺️ MAP Log & Mission Route",
@@ -212,3 +265,24 @@ CUSTOM_CSS = '''
     .status-rejected { background-color: #FFEBEE; color: #C62828; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 1.2rem; border: 1px solid #EF9A9A; }
 </style>
 '''
+
+# -----------------------------------------------------------------------------
+# CONFIGURATION VALIDATION FUNCTIONS
+# -----------------------------------------------------------------------------
+def validate_configuration():
+    """Validate configuration parameters for scientific consistency."""
+    # Ensure L_MAX > LATENCY_TARGET_MS for proper normalization
+    if L_MAX <= LATENCY_TARGET_MS:
+        raise ValueError(f"L_MAX ({L_MAX}) must be greater than LATENCY_TARGET_MS ({LATENCY_TARGET_MS}) for proper latency normalization")
+    
+    # Validate MIN_OUTAGE_GAP_S is positive
+    if MIN_OUTAGE_GAP_S <= 0:
+        raise ValueError(f"MIN_OUTAGE_GAP_S ({MIN_OUTAGE_GAP_S}) must be positive")
+    
+    # Validate target thresholds are within valid range (0-1)
+    for param_name in ["AVAILABILITY_TARGET", "CONTINUITY_TARGET", "INTEGRITY_TARGET"]:
+        value = globals()[param_name]
+        if not 0 <= value <= 1:
+            raise ValueError(f"{param_name} ({value}) must be between 0 and 1")
+    
+    return True
