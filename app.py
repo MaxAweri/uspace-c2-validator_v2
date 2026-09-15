@@ -33,7 +33,11 @@ selected_lang_name = st.sidebar.selectbox(
     index=["Українська", "English"].index(st.session_state.lang)
 )
 st.session_state.lang = selected_lang_name
-t = config.TRANSLATIONS[st.session_state.lang]
+# Безпечна ініціалізація та отримання перекладів
+if "lang" not in st.session_state or st.session_state.lang not in config.TRANSLATIONS:
+    st.session_state.lang = "Українська"
+
+t = config.TRANSLATIONS.get(st.session_state.lang, config.TRANSLATIONS["Українська"])
 
 # -----------------------------------------------------------------------------
 # HEADER
