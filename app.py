@@ -33,11 +33,10 @@ selected_lang_name = st.sidebar.selectbox(
     index=["Українська", "English"].index(st.session_state.lang)
 )
 st.session_state.lang = selected_lang_name
-# Безпечна ініціалізація та отримання перекладів
-if "lang" not in st.session_state or st.session_state.lang not in config.TRANSLATIONS:
-    st.session_state.lang = "Українська"
 
+# Безпечне отримання перекладів
 t = config.TRANSLATIONS.get(st.session_state.lang, config.TRANSLATIONS["Українська"])
+lang_code = "ua" if st.session_state.lang == "Українська" else "en"
 
 # -----------------------------------------------------------------------------
 # HEADER
@@ -63,8 +62,7 @@ selected_network_preset = st.sidebar.selectbox(
 # Show Network Preset help text
 if selected_network_preset != t["preset_none"]:
     preset_details = config.NETWORK_PRESETS[selected_network_preset]
-    st.sidebar.caption(preset_details["help"][config.TRANSLATIONS[st.session_state.lang]["language_selector"].split(" ")[-1].lower()])
-
+    st.sidebar.caption(preset_details["help"][lang_code])
 
 # Scenario Preset Selector
 scenario_preset_options = [t["preset_none"]] + list(config.SCENARIO_PRESETS.keys())
@@ -77,8 +75,7 @@ selected_scenario_preset = st.sidebar.selectbox(
 # Show Scenario Preset help text
 if selected_scenario_preset != t["preset_none"]:
     preset_details = config.SCENARIO_PRESETS[selected_scenario_preset]
-    st.sidebar.caption(preset_details["help"][config.TRANSLATIONS[st.session_state.lang]["language_selector"].split(" ")[-1].lower()])
-
+    st.sidebar.caption(preset_details["help"][lang_code])
 
 st.sidebar.markdown("---")
 
@@ -89,7 +86,6 @@ if selected_scenario_preset != t["preset_none"]:
 else:
     sail_level = st.sidebar.selectbox(t["sail_class"], ["SAIL II", "SAIL IV"])
     l_threshold_ms = st.sidebar.number_input(t["latency_threshold"], 100, 2000, 1000, 50)
-
 
 run_btn = st.sidebar.button(t["run_button"], use_container_width=True)
 
@@ -110,8 +106,15 @@ if uploaded_file:
     st.sidebar.success(t["log_loaded"])
 else:
     st.sidebar.info(t["demo_log"])
-    df = load_data("flight_telemetry_log.csv")
-
+    # Перевірка наявності тестового файлу
+    try:
+        df = load_data("ideal_flight.csv")
+    except Exception:
+        try:
+            df = load_data("flight_telemetry_log.csv")
+        except Exception:
+            st.error("Будь ласка, завантажте CSV-файл телеметрії.")
+            st.stop()
 
 # -----------------------------------------------------------------------------
 # MAIN LOGIC: RUN ON BUTTON CLICK
@@ -119,8 +122,6 @@ else:
 if not run_btn:
     st.info(t['welcome_message'])
     st.stop()
-
-# --- All calculations below this line are executed only after the button is pressed ---
 
 # CORE C2 METRICS CALCULATION
 # 1. Clock Drift Correction and Latency Calculation
@@ -180,7 +181,6 @@ kpi2.metric(t["continuity"], f"{continuity*100:.2f}%", t["continuity_target"])
 kpi3.metric(t["integrity"], f"{c2_integrity*100:.2f}%", t["integrity_target"])
 kpi4.metric(t["latency"], f"{l_p95:.1f} ms", f"Mean: {mean_latency:.1f} ms")
 
-
 st.markdown("---")
 
 # -----------------------------------------------------------------------------
@@ -216,7 +216,6 @@ with tab_monte_carlo:
     
     sim_f_L = np.array([max(0.0, min(1.0, (config.L_MAX - sl) / (config.L_MAX - l_threshold_ms))) for sl in simulated_latencies])
 
-    # For other params, we can use beta distributions centered around the measured value
     sim_availability = np.random.beta(a=availability*100, b=(1-availability)*100, size=n_simulations)
     sim_continuity = np.random.beta(a=continuity*100, b=(1-continuity)*100, size=n_simulations)
     sim_integrity = np.random.beta(a=c2_integrity*100, b=(1-c2_integrity)*100, size=n_simulations)
@@ -230,7 +229,6 @@ with tab_monte_carlo:
     
     prob_success = np.mean(sim_R_C2_pct >= 80.0) * 100.0
     st.metric(label=t["probability_text"].split("=")[0], value=f"{prob_success:.1f}%", delta=f"Mean R_C2: {np.mean(sim_R_C2_pct):.1f}%")
-
 
 with tab_telemetry:
     if 'lat' in df.columns and 'lon' in df.columns:
