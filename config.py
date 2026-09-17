@@ -22,6 +22,8 @@ STATUS_NOT_ASSESSABLE = "NOT ASSESSABLE (Недостатньо даних у л
 
 WEIGHTS_SAIL_II = (0.35, 0.25, 0.25, 0.15)
 WEIGHTS_SAIL_IV = (0.25, 0.30, 0.25, 0.20)
+WEIGHTS_SAIL_VI = (0.15, 0.25, 0.30, 0.30)
+WEIGHTS_SAIL_VII = (0.10, 0.20, 0.35, 0.35)
 
 # Configuration Validation Constants
 MIN_OUTAGE_GAP_S = 2.0
@@ -215,43 +217,337 @@ NETWORK_PRESETS = {
 # -----------------------------------------------------------------------------
 SCENARIO_PRESETS = {
     "VLOS (Visual Line of Sight)": {
-        "params": {"corridor_width": 40.0, "l_threshold": 2000, "f_up": 1.0, "sail": "SAIL II"},
+        "params": {"corridor_width": 40.0, "l_threshold": 2000, "f_up": 1.0, "sail": "SAIL I-II (Low Risk)"},
         "help": {
-            "ua": "Політ у межах прямої видимості. Широкий коридор (40 м), затримка до 2000 мс, SAIL II.",
-            "en": "Visual Line of Sight flight. Wide 40m corridor, up to 2000 ms latency, SAIL II."
+            "ua": "Політ у межах прямої видимості. Коридор 40 м, затримка L_threshold ≤ 2000 мс, частота f_up ≥ 1.0 Гц, SAIL I-II (Low Risk).",
+            "en": "Visual Line of Sight flight. 40m corridor, latency L_threshold ≤ 2000 ms, frequency f_up ≥ 1.0 Hz, SAIL I-II (Low Risk)."
         }
     },
     "EVLOS (Extended Visual Line of Sight)": {
-        "params": {"corridor_width": 30.0, "l_threshold": 1500, "f_up": 1.5, "sail": "SAIL II"},
+        "params": {"corridor_width": 30.0, "l_threshold": 1500, "f_up": 1.5, "sail": "SAIL I-II (Low Risk)"},
         "help": {
-            "ua": "Розширений політ за участі візуальних спостерігачів. Коридор 30 м, затримка до 1500 мс, SAIL II.",
-            "en": "Extended VLOS with observers. 30m corridor, up to 1500 ms latency, SAIL II."
+            "ua": "Розширений політ за участі візуальних спостерігачів. Коридор 30 м, затримка L_threshold ≤ 1500 мс, частота f_up ≥ 1.5 Гц, SAIL I-II (Low Risk).",
+            "en": "Extended VLOS with observers. 30m corridor, latency L_threshold ≤ 1500 ms, frequency f_up ≥ 1.5 Hz, SAIL I-II (Low Risk)."
         }
     },
     "BVLOS Suburban (Low Density / Rural)": {
-        "params": {"corridor_width": 25.0, "l_threshold": 1000, "f_up": 2.0, "sail": "SAIL II"},
+        "params": {"corridor_width": 25.0, "l_threshold": 1000, "f_up": 2.0, "sail": "SAIL I-II (Low Risk)"},
         "help": {
-            "ua": "Політ поза межами видимості над передмістям чи сільською місцевістю. Коридор 25 м, затримка 1000 мс, SAIL II.",
-            "en": "BVLOS flight in suburban or rural low-density areas. 25m corridor, 1000 ms latency, SAIL II."
+            "ua": "Політ поза межами видимості над передмістям/сільською місцевістю. Коридор 25 м, затримка L_threshold ≤ 1000 мс, частота f_up ≥ 2.0 Гц, SAIL I-II (Low Risk).",
+            "en": "BVLOS flight in suburban/rural areas. 25m corridor, latency L_threshold ≤ 1000 ms, frequency f_up ≥ 2.0 Hz, SAIL I-II (Low Risk)."
         }
     },
     "BVLOS Urban Canyon (Delivery / Dense VLL)": {
-        "params": {"corridor_width": 15.0, "l_threshold": 500, "f_up": 2.5, "sail": "SAIL IV"},
+        "params": {"corridor_width": 15.0, "l_threshold": 500, "f_up": 2.5, "sail": "SAIL III-IV (Medium Risk)"},
         "help": {
-            "ua": "Політ у щільній міській забудові (доставка, інспекція). Вузький коридор (15 м), затримка 500 мс, SAIL IV.",
-            "en": "Dense urban VLL operations (delivery, inspection). Narrow 15m corridor, 500 ms latency, SAIL IV."
+            "ua": "Політ у щільній міській забудові (доставка, інспекція). Вузький коридор 15 м, затримка L_threshold ≤ 500 мс, частота f_up ≥ 2.5 Гц, SAIL III-IV (Medium Risk).",
+            "en": "Dense urban VLL operations (delivery). Narrow 15m corridor, latency L_threshold ≤ 500 ms, frequency f_up ≥ 2.5 Hz, SAIL III-IV (Medium Risk)."
         }
     },
     "UAM / eVTOL Passenger Mobility": {
-        "params": {"corridor_width": 10.0, "l_threshold": 100, "f_up": 5.0, "sail": "SAIL IV"},
+        "params": {"corridor_width": 10.0, "l_threshold": 100, "f_up": 5.0, "sail": "SAIL III-IV (Medium Risk)"},
         "help": {
-            "ua": "Пасажирські та важкі вантажні UAM/eVTOL перевезення. Вузький коридор (10 м), сувора затримка (100 мс), SAIL IV.",
-            "en": "Passenger and cargo UAM/eVTOL transport. Ultra-narrow 10m corridor, 100 ms latency limit, SAIL IV."
+            "ua": "Пасажирські та важкі вантажні UAM/eVTOL перевезення. Вузький коридор 10 м, сувора затримка L_threshold ≤ 100 мс, частота f_up ≥ 5.0 Гц, SAIL III-IV (Medium Risk).",
+            "en": "Passenger and cargo UAM/eVTOL transport. Ultra-narrow 10m corridor, latency L_threshold ≤ 100 ms, frequency f_up ≥ 5.0 Hz, SAIL III-IV (Medium Risk)."
         }
     }
 }
 
 OPERATION_PRESETS = SCENARIO_PRESETS
+
+# -----------------------------------------------------------------------------
+# PRESET EXPLANATIONS (TWO-LEVEL REFERENCE SYSTEM)
+# -----------------------------------------------------------------------------
+PRESET_EXPLANATIONS_SHORT = {
+    "BVLOS Urban Canyon (Delivery / Dense VLL)": {
+        "title": "🛸 BVLOS Urban Canyon: Коротко про вимоги",
+        "points": [
+            "⏱️ **Затримка ≤ 500 мс**: Гарантує запас часу для реакції сервера USSP при загальному ліміті U-space у 1.0 с.",
+            "📡 **Частота f_up ≥ 2.5 Гц**: Відправка телеметрії кожні 400 мс запобігає хибним тривогам про вихід з коридору.",
+            "📐 **Коридор 15.0 м**: Захисний 4D-об'єм польоту з урахуванням щільності забудови міських вулиць.",
+            "🛡️ **Ризик SAIL IV**: Категорія Medium Risk для польотів над містом. Вимагає підвищеної уваги до затримки."
+        ],
+        "tab_pointer": "👉 Для детального нормативного аналізу зі посиланнями на Regulation (EU) 2021/664, ASTM F3548-21 та MDPI відкрийте вкладку '📚 Довідник U-space' у головному вікні."
+    }
+}
+
+PRESET_EXPLANATIONS_FULL = {
+    "BVLOS Urban Canyon (Delivery / Dense VLL)": {
+        "title": "📖 Повний нормативно-технічний розбір сценарію BVLOS Urban Canyon",
+        "intro": "Сценарій описує польоти безпілотних авіаційних систем (БАС) поза межами прямої видимості в умовах щільної міської забудови на малих висотах (Very Low Level / Dense VLL).",
+        "sections": [
+            {
+                "header": "⏱️ Порогова затримка C2-каналу (L_threshold = 500 мс)",
+                "body": "У повітряному просторі U-space критично забезпечити моніторинг відповідності траєкторії (Conformance Monitoring). Сумарний нормативний ліміт затримки всієї системи (End-to-End Latency) від борту до сервера USSP не повинен перевищувати 1.0 с. Поріг для C2-каналу встановлено на рівні 500 мс для забезпечення коефіцієнта запасу 2.0 на серверну обробку та генерацію тривог.",
+                "normative": "Regulation (EU) 2021/664 (Art. 13), ASTM F3548-21 (Section 6.2), CORUS CONOPS Ed.4"
+            },
+            {
+                "header": "📡 Мінімальна частота оновлення телеметрії (f_up = 2.5 Гц)",
+                "body": "При швидкості БАС 10–15 м/с у вузькому міському коридорі частота 1.0 Гц створює геометричну похибку екстраполяції понад 10 метрів. Передавання пакетів кожні 400 мс (2.5 Гц) є експериментально доведеним мінімумом для запобігання хибним тривогам про вихід з геозони (False Non-Conformance Alarms).",
+                "normative": "MDPI 'Analysis of UTM Tracking Performance for Conformance Monitoring' (2023)"
+            },
+            {
+                "header": "📐 Ширина польотного коридору (W_corridor = 15.0 м)",
+                "body": "Ширина визначає габарити 4D-об'єму польотного наміру (Operational Intent Volume, OIV) з урахуванням відстані між будівлями та висотності навколишньої забудови.",
+                "normative": "EASA Easy Access Rules for U-space / EUROCAE ED-269"
+            },
+            {
+                "header": "🛡️ Клас ризику SORA 2.5 (SAIL III-IV)",
+                "body": "Польоти над густозаселеними міськими районами належать до категорії Medium Risk (SAIL IV). Це вимагає підвищених вагових коефіцієнтів для затримки (w_L=0.25) та цілісності телеметрії (w_I=0.25).",
+                "normative": "JARUS SORA 2.5 (OSO#06 Command & Control Link Performance)"
+            }
+        ]
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PRESET EXPLANATIONS (TWO-LEVEL REFERENCE SYSTEM)
+# -----------------------------------------------------------------------------
+PRESET_EXPLANATIONS_SHORT = {
+    "BVLOS Urban Canyon (Delivery / Dense VLL)": {
+        "title": "⚡ Швидкий інженерний розбір: BVLOS Urban Canyon",
+        "qa_list": [
+            {
+                "q": "❓ Чому затримка L_threshold = 500 мс?",
+                "a": "Сумарний часовий бюджет U-space (End-to-End) становить 1.0 с (Art. 13 EU 2021/664). 500 мс виділяється на C2-канал, а інші 500 мс — на серверну обробку та генерацію alerts."
+            },
+            {
+                "q": "❓ Чому частота телеметрії f_up = 2.5 Гц?",
+                "a": "При швидкості БАС 10–15 м/с частота 1 Гц створює «сліпий проміжок» у 15 м. Частота 2.5 Гц (пакет кожні 400 мс) — математичний мінімум для запобігання хибним тривогам."
+            },
+            {
+                "q": "❓ Чому ширина коридору W_corridor = 15.0 м?",
+                "a": "Визначається габаритами міських вулиць та щільністю забудови (EUROCAE ED-269 / Operational Intent Volume)."
+            },
+            {
+                "q": "❓ Чому клас ризику SAIL III-IV (Medium Risk)?",
+                "a": "Польоти над містом належать до Medium Risk за SORA 2.5, що вимагає підвищених ваг для затримки та цілісності (OSO#06)."
+            }
+        ]
+    },
+    "VLOS (Visual Line of Sight)": {
+        "title": "⚡ Швидкий інженерний розбір: VLOS",
+        "qa_list": [
+            {
+                "q": "❓ Чому затримка L_threshold = 2000 мс?",
+                "a": "При польоті у межах прямої видимості пілот здійснює безпосереднє візуальне спостереження за БАС. Поріг 2000 мс допустимий, оскільки загрози усуваються ручним втручанням пілота."
+            },
+            {
+                "q": "❓ Чому частота телеметрії f_up = 1.0 Гц?",
+                "a": "Передача кадру телеметрії 1 раз на секунду є базовим стандартом для візуального моніторингу траєкторії на сервері USSP у нещільних геозонах."
+            },
+            {
+                "q": "❓ Чому ширина коридору W_corridor = 40.0 м?",
+                "a": "Враховує геометричну похибку візуальної орієнтації дистанційного пілота на відстані до 500 м без використання автоматичного трекінгу."
+            },
+            {
+                "q": "❓ Чому клас ризику SAIL I-II (Low Risk)?",
+                "a": "За SORA 2.5 польоти VLOS на малих висотах мають найнижчі класи наземного (GRC) та повітряного (ARC) ризиків."
+            }
+        ]
+    },
+    "EVLOS (Extended Visual Line of Sight)": {
+        "title": "⚡ Швидкий інженерний розбір: EVLOS",
+        "qa_list": [
+            {
+                "q": "❓ Чому затримка L_threshold = 1500 мс?",
+                "a": "У сценарії EVLOS за БАС спостерігають візуальні спостерігачі (VO). Поріг 1500 мс враховує часову затримку голосового зв'язку між спостерігачем та пілотом."
+            },
+            {
+                "q": "❓ Чому частота телеметрії f_up = 1.5 Гц?",
+                "a": "Частота 1.5 Гц (пакет кожні 660 мс) гарантує кращу дискретизацію треку на межах зони видимості спостерігачів при збільшенні радіуса польоту."
+            },
+            {
+                "q": "❓ Чому ширина коридору W_corridor = 30.0 м?",
+                "a": "Звуження коридору з 40 м до 30 м обґрунтовано наявністю додаткових точок спостереження (Visual Observers), що знижує кутову похибку позиції."
+            },
+            {
+                "q": "❓ Чому клас ризику SAIL I-II (Low Risk)?",
+                "a": "Залучення візуальних спостерігачів єофіційним заходом зниження ризику (Mitigation M1) за SORA 2.5."
+            }
+        ]
+    },
+    "BVLOS Suburban (Low Density / Rural)": {
+        "title": "⚡ Швидкий інженерний розбір: BVLOS Suburban",
+        "qa_list": [
+            {
+                "q": "❓ Чому затримка L_threshold = 1000 мс?",
+                "a": "У передмісті з низькою щільністю забудови допустима затримка до 1.0 с (базовий норматив EASA), оскільки щільність людського трафіку та висотних перешкод є низькою."
+            },
+            {
+                "q": "❓ Чому частота телеметрії f_up = 2.0 Гц?",
+                "a": "Відправка даних кожні 500 мс гарантує стабільний моніторинг траєкторії на швидкостях 15–20 м/с поза межами зони видимості."
+            },
+            {
+                "q": "❓ Чому ширина коридору W_corridor = 25.0 м?",
+                "a": "Враховує сумарну похибку супутникової навігації (GNSS 3D Fix) та можливий вітровий дрейф на відкритій місцевості."
+            },
+            {
+                "q": "❓ Чому клас ризику SAIL I-II (Low Risk)?",
+                "a": "Сільська місцевість має низький клас наземного ризику (Ground Risk Class 2-3), що зберігає місію в категорії Low Risk."
+            }
+        ]
+    },
+    "UAM / eVTOL Passenger Mobility": {
+        "title": "⚡ Швидкий інженерний розбір: UAM / eVTOL",
+        "qa_list": [
+            {
+                "q": "❓ Чому затримка L_threshold = 100 мс?",
+                "a": "Пасажирські та важкі eVTOL вимагають реакції рівня Real-Time / URLLC. Затримка понад 100 мс неприпустима через загрозу критичних авіаподій."
+            },
+            {
+                "q": "❓ Чому частота телеметрії f_up = 5.0 Гц?",
+                "a": "Передача кадру кожні 200 мс (5 Гц) є найсуворішою вимогою для міської аеромобільності (Dense UAM) для миттєвого розведення бортового трафіку."
+            },
+            {
+                "q": "❓ Чому ширина коридору W_corridor = 10.0 м?",
+                "a": "Ультравузький польотний коридор (Vertiport Airway), який вимагає обов'язкового використання високоточної навігації GNSS RTK."
+            },
+            {
+                "q": "❓ Чому клас ризику SAIL III-IV (Medium/High Risk)?",
+                "a": "Пасажирські перевезення над містом мають найвищі вимоги до надійності C2-каналу та резервування (Dual-SIM 5G / SatCom)."
+            }
+        ]
+    }
+}
+
+PRESET_EXPLANATIONS_FULL = {
+    "BVLOS Urban Canyon (Delivery / Dense VLL)": {
+        "title": "📚 Інженерно-нормативний розбір: BVLOS Urban Canyon (Delivery / Dense VLL)",
+        "intro": "Сценарій описує польоти БАС поза межами прямої видимості в умовах щільної міської забудови на малих висотах (Very Low Level airspace). Додаток оцінює відповідність телеметрії нормативним рамкам EASA та ASTM.",
+        "sections": [
+            {
+                "question": "❓ Чому порогова затримка C2-каналу встановлена саме L_threshold = 500 мс?",
+                "answer": "Згідно зі ст. 13 Імплементаційного регламенту Комісії (EU) 2021/664 та розділу 6.2 стандарту ASTM F3548-21, сервіс моніторингу відповідності (Conformance Monitoring Service, CMS) повинен виявляти відхилення БАС від виділеного 4D-об'єму. Загальний допустимий часовий бюджет системи (End-to-End Latency) від борту до пульту USSP становить 1.0 с. Половинний поріг у 500 мс закладається на C2-канал зв'язку (Transmission Latency), щоб залишити 500 мс запасу на серверну екстраполяцію, розрахунок конфліктів та розсилку попереджень іншим учасникам руху.",
+                "normative": "Regulation (EU) 2021/664 (Art. 13), ASTM F3548-21 (Section 6.2), CORUS CONOPS Ed. 4"
+            },
+            {
+                "question": "❓ Чому мінімальна частота оновлення телеметрії повинна бути f_up = 2.5 Гц?",
+                "answer": "У науковому дослідженні MDPI 'Analysis of UTM Tracking Performance for Conformance Monitoring' доведено, що при швидкості польоту БАС 10–15 м/с (36–54 км/год) у вузьких міських вулицях частота відправки телеметрії 1.0 Гц створює дискретний 'сліпий проміжок' у 10–15 метрів між сусідніми пакетами. Частота 2.5 Гц (передача кадру кожні 400 мс) є експериментально та математично доведеним мінімумом, який гарантує, що похибка запізнення позиції не перевищить допустиму геометрію міського коридору.",
+                "normative": "MDPI Aerospace 'Analysis of UTM Tracking Performance' (2023)"
+            },
+            {
+                "question": "❓ Чому ширина польотного коридору становить W_corridor = 15.0 м?",
+                "answer": "Ширина визначає геометрію об'єму польотного наміру (Operational Intent Volume, OIV) згідно зі стандартом EUROCAE ED-269. У міських каньйонах ширина коридору обмежена фізичною відстанню між будівлями та висотністю забудови, що вимагає високої точності витримування траєкторії автопілотом (Flight Technical Error, FTE).",
+                "normative": "EUROCAE ED-269 / EASA Easy Access Rules for U-space"
+            },
+            {
+                "question": "❓ Чому застосовується клас ризику SORA 2.5 SAIL III-IV (Medium Risk)?",
+                "answer": "За методологією оцінки ризиків JARUS SORA 2.5, польоти BVLOS над густозаселеними міськими районами автоматично класифікуються як Medium Risk (SAIL IV). Відповідно до вимоги OSO#06 (C2 Link Performance), це передбачає збільшення вагових коефіцієнтів затримки (w_L=0.25) та цілісності телеметрії (w_I=0.25) при формуванні підсумкового балу R_C2.",
+                "normative": "JARUS SORA 2.5 (OSO#06 Command & Control Link Performance)"
+            },
+            {
+                "question": "🎯 Чому це критично для передпольотного тестування (що бачить оператор)?",
+                "answer": "Інструмент перевіряє завантажений лог телеметрії на відповідність вказаним Hard Constraints. Якщо фактичний лог має затримку P95 = 800 мс (> 500 мс) або частоту запису 1.5 Гц (< 2.5 Гц), система миттєво видає вердикт FAIL і вказує на точне 'вузьке місце' (Bottleneck Diagnostic). Це сигналізує операторові про необхідність збільшити частоту відправки телеметрії на борту або змінити 4G-модуль на 5G NR до вильоту.",
+                "normative": "U-space C2 Technical Readiness Screening Methodology (KSE Thesis)"
+            }
+        ]
+    },
+    "VLOS (Visual Line of Sight)": {
+        "title": "📚 Інженерно-нормативний розбір: VLOS (Visual Line of Sight)",
+        "intro": "Сценарій VLOS передбачає польоти, під час яких дистанційний пілот постійно утримує БАС у невооруженому візуальному контакті для контролю траєкторії та уникнення зіткнень.",
+        "sections": [
+            {
+                "question": "❓ Чому порогова затримка C2-каналу встановлена L_threshold = 2000 мс?",
+                "answer": "Згідно з EASA Easy Access Rules for UAS (AMC1 Article 13 Regulation EU 2021/664), при візуальному політі основну функцію виявлення та запобігання зіткненням (See-and-Avoid) виконує безпосередньо пілот. Затримка C2-каналу до 2.0 секунд є припустимою, оскільки сервіс U-space виконує лише фонову інформаційну функцію.",
+                "normative": "Regulation (EU) 2021/664 (Art. 13), EASA Easy Access Rules for UAS"
+            },
+            {
+                "question": "❓ Чому мінімальна частота оновлення телеметрії повинна бути f_up = 1.0 Гц?",
+                "answer": "При швидкостях VLOS-польотів (до 8–10 м/с) та візуальному контролі частота відправлення телеметрії 1.0 Гц забезпечує достатню дискретизацію для відображення позиції БАС на моніторі USSP без перевантаження радіоефіру ISM-діапазонів (2.4/5.8 ГГц).",
+                "normative": "JARUS RLP Concept / EUROCAE ED-269"
+            },
+            {
+                "question": "❓ Чому ширина польотного коридору становить W_corridor = 40.0 м?",
+                "answer": "Ширина коридору у 40 метрів враховує сумарну похибку оцінки віддалі людським оком (Visual Perception Error) та фізичну глибину орієнтації БАС у просторі на відстані 300–500 метрів від пілота.",
+                "normative": "EASA SORA 2.5 Ground Risk Assessment Guidelines"
+            },
+            {
+                "question": "❓ Чому застосовується клас ризику SORA 2.5 SAIL I-II (Low Risk)?",
+                "answer": "Операції у межах прямої видимості зазвичай мають низьку щільність повітряного руху (ARC-A/ARC-B). За методикою SORA 2.5 це відповідає рівню SAIL II, де вимоги до надійності C2-лінку (OSO#06) є мінімальними.",
+                "normative": "JARUS SORA 2.5 (OSO#06 Command & Control Link Performance)"
+            }
+        ]
+    },
+    "EVLOS (Extended Visual Line of Sight)": {
+        "title": "📚 Інженерно-нормативний розбір: EVLOS (Extended Visual Line of Sight)",
+        "intro": "Сценарій EVLOS дозволяє розширити радіус польоту БАС за рахунок залучення додаткових навчених візуальних спостерігачів (Visual Observers, VO).",
+        "sections": [
+            {
+                "question": "❓ Чому порогова затримка C2-каналу встановлена L_threshold = 1500 мс?",
+                "answer": "При EVLOS інформація про перешкоди передається пілоту через спостерігача. Поріг затримки телеметрії 1500 мс закладає 500 мс запасу на затримку голосової команди від спостерігача до пілота (Human Communication Latency).",
+                "normative": "EASA Easy Access Rules for UAS (GM1 to Specific Category)"
+            },
+            {
+                "question": "❓ Чому мінімальна частота оновлення телеметрії повинна бути f_up = 1.5 Гц?",
+                "answer": "При збільшенні віддалення БАС до 1.5–2.0 км частота 1.5 Гц (пакет кожні 660 мс) є математично достатньою для підтримання синхронізації між візуальним спостереженням та даними на сервері USSP.",
+                "normative": "MDPI Aerospace 'UAS Tracking Performance' (2023)"
+            },
+            {
+                "question": "❓ Чому ширина польотного коридору становить W_corridor = 30.0 м?",
+                "answer": "Наявність точок перехресного спостереження (Cross-Observer Positioning) зменшує невизначеність координатного положення БАС порівняно з VLOS, що дозволяє звузити коридор до 30 метрів.",
+                "normative": "EUROCAE ED-269 / EASA AMC1 Article 13"
+            },
+            {
+                "question": "❓ Чому застосовується клас ризику SORA 2.5 SAIL I-II (Low Risk)?",
+                "answer": "Використання процедури передачі контролю між спостерігачами є визнаним заходом зниження ризику (Mitigation M1) за SORA 2.5, що утримує операцію в категорії Low Risk (SAIL II).",
+                "normative": "JARUS SORA 2.5 (Annex Glossary & M1 Mitigations)"
+            }
+        ]
+    },
+    "BVLOS Suburban (Low Density / Rural)": {
+        "title": "📚 Інженерно-нормативний розбір: BVLOS Suburban (Low Density / Rural)",
+        "intro": "Сценарій описує польоти поза межами прямої видимості над передмістям чи сільською місцевістю з низькою щільністю населення.",
+        "sections": [
+            {
+                "question": "❓ Чому порогова затримка C2-каналу встановлена L_threshold = 1000 мс?",
+                "answer": "Відповідно до EASA Easy Access Rules for U-space (Art. 13 EU 2021/664), затримка 1000 мс є класичним часовим лімітом для автоматизованого моніторингу відповідності у зонах низького ризику.",
+                "normative": "Regulation (EU) 2021/664 / ASTM F3548-21"
+            },
+            {
+                "question": "❓ Чому мінімальна частота оновлення телеметрії повинна бути f_up = 2.0 Гц?",
+                "answer": "При швидкостях польоту 15–20 м/с частота 2.0 Гц забезпечує інтервал між точками у 7.5–10 метрів, що задовольняє вимоги геометричного ешелонування BUBBLES у нещільних геозонах.",
+                "normative": "SESAR BUBBLES CONOPS / EUROCAE ED-269"
+            },
+            {
+                "question": "❓ Чому ширина польотного коридору становить W_corridor = 25.0 м?",
+                "answer": "Враховує сумарну похибку системи (Total System Error, TSE), яка поєднує похибку GNSS позиціонування та вітрові збурення автопілота на відкритому просторі.",
+                "normative": "EASA Special Condition for Light UAS"
+            },
+            {
+                "question": "❓ Чому застосовується клас ризику SORA 2.5 SAIL I-II (Low Risk)?",
+                "answer": "Мала щільність населення на землі забезпечує низький початковий клас наземного ризику (Intrinsic GRC), що дозволяє проводити операцію в категорії Low Risk.",
+                "normative": "JARUS SORA 2.5 Main Body"
+            }
+        ]
+    },
+    "UAM / eVTOL Passenger Mobility": {
+        "title": "📚 Інженерно-нормативний розбір: UAM / eVTOL Passenger Mobility",
+        "intro": "Сценарій описує польоти пасажирських та важких вантажних безпілотних повітряних суден (eVTOL / Urban Air Mobility) у міських вертіпортах.",
+        "sections": [
+            {
+                "question": "❓ Чому порогова затримка C2-каналу встановлена L_threshold = 100 мс?",
+                "answer": "Для пасажирських eVTOL згідно з EASA SC-VTOL та вимогами 3GPP URLLC, затримка C2-каналу понад 100 мс створює загрозу для динамічної стабілізації та автоматичного розведення БАС у критичних фазах посадки на вертіпорт.",
+                "normative": "EASA Special Condition VTOL / 3GPP TS 22.125 (UAV URLLC)"
+            },
+            {
+                "question": "❓ Чому мінімальна частота оновлення телеметрії повинна бути f_up = 5.0 Гц?",
+                "answer": "Частота 5.0 Гц (передача пакету кожні 200 мс) є стандартом аеромобільності UAM для забезпечення цільового рівня безпеки (Target Level of Safety 10^-9 авіаподій на годину).",
+                "normative": "CORUS-XUAM Concept of Operations / ASTM F3548-21"
+            },
+            {
+                "question": "❓ Чому ширина польотного коридору становить W_corridor = 10.0 м?",
+                "answer": "Ультравузькі міські вертісмуги вимагають найвищої навігаційної точності (RNP 0.01 / GNSS RTK) для утримання важкого апарата всередині повітряного трафіку.",
+                "normative": "EASA PTS-VCA (Physical Characteristics for Vertiports)"
+            },
+            {
+                "question": "❓ Чому застосовується клас ризику SORA 2.5 SAIL III-IV (Medium Risk)?",
+                "answer": "Перевезення пасажирів над містом належить до категорії підвищеного ризику, що вимагає залучення резервованих каналів зв'язку (Dual 5G + SatCom) та підвищених вагових коефіцієнтів C2.",
+                "normative": "JARUS SORA 2.5 / EASA Easy Access Rules for U-space"
+            }
+        ]
+    }
+}
 
 # -----------------------------------------------------------------------------
 # CUSTOM CSS
@@ -286,3 +582,152 @@ def validate_configuration():
             raise ValueError(f"{param_name} ({value}) must be between 0 and 1")
     
     return True
+
+
+# -----------------------------------------------------------------------------
+# REQUIREMENT REGISTER & PROVENANCE METADATA
+# -----------------------------------------------------------------------------
+REQUIREMENT_REGISTER = [
+    {
+        "id": "C2-AVA-001",
+        "title": "Доступність каналу C2 (Availability)",
+        "source": "Regulation (EU) 2021/664 Art. 13",
+        "provenance": "Обов'язкова норма ЄС (Mandatory U-space Service Rule)",
+        "parameter": "timestamp_board_ms, seq_id",
+        "metric_key": "availability",
+        "target_text": "A ≥ 98.0%",
+        "target_val": 0.98,
+        "type": "min",
+        "unit": "%"
+    },
+    {
+        "id": "C2-LAT-001",
+        "title": "Порогова затримка C2 (P95 Latency)",
+        "source": "ASTM F3548-21 / SORA 2.5 OSO#06",
+        "provenance": "Сценарний поріг затримки (Scenario Target Threshold)",
+        "parameter": "timestamp_board_ms, timestamp_server_ms",
+        "metric_key": "l_p95",
+        "target_text": "P95 ≤ L_threshold",
+        "target_val": None,  # Динамічно визначається scenario threshold (мс)
+        "type": "max",
+        "unit": "мс"
+    },
+    {
+        "id": "C2-CON-001",
+        "title": "Часова безперервність (Continuity)",
+        "source": "JARUS RLP Concept / SORA 2.5",
+        "provenance": "Інженерна рекомендація (Engineering Guidance Threshold)",
+        "parameter": "timestamp_board_ms (t_gaps > 2.0s)",
+        "metric_key": "continuity",
+        "target_text": "C ≥ 99.0%",
+        "target_val": 0.99,
+        "type": "min",
+        "unit": "%"
+    },
+    {
+        "id": "C2-COM-001",
+        "title": "Повнота послідовності даних (Completeness)",
+        "source": "EUROCAE ED-269 / Data Quality Proxy",
+        "provenance": "Інженерний показник якості логу (Data Quality Proxy)",
+        "parameter": "seq_id",
+        "metric_key": "c2_data_completeness",
+        "target_text": "I_data ≥ 99.5%",
+        "target_val": 0.995,
+        "type": "min",
+        "unit": "%"
+    },
+    {
+        "id": "NAV-FIX-001",
+        "title": "Придатність супутникового фіксу (GNSS Quality)",
+        "source": "EASA Easy Access Rules for UAS",
+        "provenance": "Допоміжний індикатор навігації (Auxiliary Indicator)",
+        "parameter": "gnss_fix_type",
+        "metric_key": "i_gnss",
+        "target_text": "F_GNSS ≥ 95.0%",
+        "target_val": 0.95,
+        "type": "min",
+        "unit": "%"
+    }
+]
+
+# -----------------------------------------------------------------------------
+# DATA SANITY & QUALITY CHECKS DEFINITIONS
+# -----------------------------------------------------------------------------
+DATA_SANITY_CHECKS = [
+    {
+        "check_id": "CHK-001",
+        "name": "Monotonicity Check",
+        "desc": "Перевірка монотонності зростання бортового часу (timestamp_board_ms)."
+    },
+    {
+        "check_id": "CHK-002",
+        "name": "Sequence Integrity Check",
+        "desc": "Перевірка відсутності дублікатів і некоректних значень seq_id."
+    },
+    {
+        "check_id": "CHK-003",
+        "name": "Duration Sufficiency",
+        "desc": "Перевірка достатності тривалості логу (не менше 10 секунд)."
+    },
+    {
+        "check_id": "CHK-004",
+        "name": "Zero/Negative Delay Check",
+        "desc": "Перевірка некоректних або від'ємних часових затримок."
+    },
+    {
+        "check_id": "CHK-005",
+        "name": "Sampling Rate Alignment",
+        "desc": "Перевірка відповідності фактичної частоти запису до заявленої f_up."
+    }
+]
+
+# -----------------------------------------------------------------------------
+# BASELINE AGGREGATION MODELS
+# -----------------------------------------------------------------------------
+AGGREGATION_MODELS = {
+    "linear": {
+        "name": "Лінійна зважена сума (Weighted Arithmetic Mean)",
+        "formula": "R_linear = w_A*A + w_C*C + w_L*f_L + w_I*I",
+        "description": "Класична базова модель. Дозволяє взаємну компенсацію показників."
+    },
+    "geometric": {
+        "name": "Геометричне середнє (Weighted Geometric Mean)",
+        "formula": "R_geom = A^w_A * C^w_C * f_L^w_L * I^w_I",
+        "description": "Суворіша модель. Значно карає підсумковий бал за деградацію навіть одного параметра."
+    },
+    "minimum": {
+        "name": "Принцип найслабшої ланки (Minimum Criterion / Weakest Link)",
+        "formula": "R_min = min(A, C, f_L, I)",
+        "description": "Найсуворіший орієнтир для safety-critical місій. Базується на найгіршому показнику."
+    }
+}
+
+# -----------------------------------------------------------------------------
+# BOTTLENECK DIAGNOSTICS & CORRECTIVE ACTIONS
+# -----------------------------------------------------------------------------
+CORRECTIVE_ACTIONS_LOOKUP = {
+    "l_p95": {
+        "issue": "Затримка P95 перевищує сценарний поріг L_threshold.",
+        "severity": "High (Ризик виникнення Non-Conformance Alerts у U-space)",
+        "action": "Збільшити пріоритет C2-каналу (перехід на 5G URLLC Slice), збільшити частоту f_up або звузити польотний коридор.",
+        "owner": "Оператор БАС / Провайдер стільникового зв'язку"
+    },
+    "availability": {
+        "issue": "Доступність каналу C2 нижче цільового значення 98.0%.",
+        "severity": "Critical (Ризик втрати зв'язку та переходу в режим Lost Link)",
+        "action": "Провести радіочастотний аудит покриття вздовж маршруту або переключитися на дубльований модуль (Dual-SIM / SatCom).",
+        "owner": "Інженер з телекомунікацій / Оператор БАС"
+    },
+    "continuity": {
+        "issue": "Виявлено тривалі розриви зв'язку (Outages > 2.0 с).",
+        "severity": "High (Переривання безперервності передачі телеметрії)",
+        "action": "Оптимізувати параметри хендоверу (Handover) між базовими станціями або підключити буферну чергу пакетів.",
+        "owner": "Провайдер мережі зв'язку (MNO)"
+    },
+    "c2_data_completeness": {
+        "issue": "Повнота послідовності пакетів нижче 99.5%.",
+        "severity": "Medium (Втрата окремих телеметричних кадрів)",
+        "action": "Перевірити бортовий модуль зв'язку на наявність переповнення буфера або електромагнітних завад.",
+        "owner": "Бортовий інженер БАС"
+    }
+}
