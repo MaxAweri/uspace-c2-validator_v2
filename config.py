@@ -969,6 +969,29 @@ AGGREGATION_MODELS = {
 }
 
 # -----------------------------------------------------------------------------
+# MONTE CARLO CORRELATION MATRIX (P1-2)
+# Джерело: Sklar (1959) copula theory; Nelsen (2006), "An Introduction to Copulas"
+# Аналог з телеком-інженерії: series reliability of C2 network components
+# Order: (Availability, Continuity, Latency, Completeness)
+# -----------------------------------------------------------------------------
+MC_CORRELATION_MATRIX = [
+    [ 1.00,  0.75, -0.60,  0.55],  # Availability
+    [ 0.75,  1.00, -0.50,  0.50],  # Continuity
+    [-0.60, -0.50,  1.00, -0.40],  # Latency
+    [ 0.55,  0.50, -0.40,  1.00],  # Completeness
+]
+
+MC_CORRELATION_PROVENANCE = {
+    "source": "Sklar (1959) copula theory; Nelsen (2006) 'An Introduction to Copulas'",
+    "method": "Simplified Gaussian copula: correlated standard normals -> uniforms via CDF -> target marginals via inverse CDF",
+    "rationale": "Uncorrelated Monte Carlo underestimates uncertainty width. C2 link parameters degrade "
+                 "synchronously under network failures (Availability drops -> Continuity drops -> Latency rises -> "
+                 "Completeness suffers). Empirical correlations based on telecom series-reliability heuristics.",
+    "impact": "Correlated MC produces wider CI95 (more realistic), higher P(fail) under stress, "
+              "and better reflects worst-case scenarios for BVLOS operations."
+}
+
+# -----------------------------------------------------------------------------
 # BOTTLENECK DIAGNOSTICS & CORRECTIVE ACTIONS
 # -----------------------------------------------------------------------------
 CORRECTIVE_ACTIONS_LOOKUP = {
