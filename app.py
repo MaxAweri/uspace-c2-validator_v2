@@ -644,32 +644,26 @@ st.markdown("---")
 kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
 
 # Dynamic threshold highlighting with green/red badges
-availability_delta = (
-    f"{config.AVAILABILITY_TARGET*100:.1f}%"
-    if availability >= config.AVAILABILITY_TARGET
-    else f"↓ {config.AVAILABILITY_TARGET*100:.1f}%"
-)
-availability_color = "normal" if availability >= config.AVAILABILITY_TARGET else "inverse"
+# delta_color="normal": Streamlit сам робить + → зелений ↑, − → червоний ↓
+_avail_ok = availability >= config.AVAILABILITY_TARGET
+availability_delta = f"{config.AVAILABILITY_TARGET*100:.1f}%" if _avail_ok else f"-{config.AVAILABILITY_TARGET*100:.1f}%"
+availability_color = "normal"
 
-continuity_delta = (
-    f"{config.CONTINUITY_TARGET*100:.1f}%"
-    if continuity >= config.CONTINUITY_TARGET
-    else f"↓ {config.CONTINUITY_TARGET*100:.1f}%"
-)
-continuity_color = "normal" if continuity >= config.CONTINUITY_TARGET else "inverse"
+_cont_ok = continuity >= config.CONTINUITY_TARGET
+continuity_delta = f"{config.CONTINUITY_TARGET*100:.1f}%" if _cont_ok else f"-{config.CONTINUITY_TARGET*100:.1f}%"
+continuity_color = "normal"
 
-completeness_delta = (
-    f"{config.COMPLETENESS_TARGET*100:.1f}%"
-    if c2_data_completeness >= config.COMPLETENESS_TARGET
-    else f"↓ {config.COMPLETENESS_TARGET*100:.1f}%"
-)
-completeness_color = "normal" if c2_data_completeness >= config.COMPLETENESS_TARGET else "inverse"
+_compl_ok = c2_data_completeness >= config.COMPLETENESS_TARGET
+completeness_delta = f"{config.COMPLETENESS_TARGET*100:.1f}%" if _compl_ok else f"-{config.COMPLETENESS_TARGET*100:.1f}%"
+completeness_color = "normal"
 
-latency_delta = f"{l_threshold_ms} ms" if l_p95 <= l_threshold_ms else f"↓ {l_threshold_ms} ms"
-latency_color = "normal" if l_p95 <= l_threshold_ms else "inverse"
+_lat_ok = l_p95 <= l_threshold_ms
+latency_delta = f"{l_threshold_ms} ms" if _lat_ok else f"-{l_threshold_ms} ms"
+latency_color = "normal"
 
-gnss_delta = "100%" if f_gnss >= 1.0 else f"↓ 100%"
-gnss_color = "normal" if f_gnss >= 1.0 else "inverse"
+_gnss_ok = f_gnss >= 1.0
+gnss_delta = "100%" if _gnss_ok else "-100%"
+gnss_color = "normal"
 
 kpi1.metric(t["availability"], f"{availability*100:.2f}%", availability_delta, delta_color=availability_color, help=t["availability_help"])
 kpi2.metric(t["continuity"], f"{continuity*100:.2f}%", continuity_delta, delta_color=continuity_color, help=t["continuity_help"])
