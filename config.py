@@ -5,7 +5,25 @@ REQUIRED_COLUMNS = ['timestamp_board_ms', 'timestamp_server_ms', 'seq_id']
 L_MAX = 5000.0
 OUTAGE_THRESHOLD_MS = 2000
 SENSITIVITY_DELTA = 0.10
-R_C2_THRESHOLD_PCT = 80.0
+# -----------------------------------------------------------------------------
+# R_C2 PASS THRESHOLDS BY SAIL (differentiated by operational risk)
+# Base value 80% is aligned with SESAR U-space CONOPS 4th ed. (2023) baseline
+# for C2 Link End-to-End Availability (99.3%) discounted for aggregate index.
+# Higher SAIL requires higher margin per SORA 2.5 Annex E OSO#06 assurance level.
+# -----------------------------------------------------------------------------
+R_C2_THRESHOLDS_BY_SAIL = {
+    "SAIL I-II (Low Risk)":      80.0,   # base CONOPS-aligned threshold
+    "SAIL III-IV (Medium Risk)": 90.0,   # +10% margin (Medium assurance)
+    "SAIL V-VI (High Risk)":     95.0,   # +15% margin (High assurance, 3rd-party validation)
+}
+
+# Backwards-compatible fallback (default = SAIL I-II baseline)
+R_C2_THRESHOLD_PCT = R_C2_THRESHOLDS_BY_SAIL["SAIL I-II (Low Risk)"]
+
+# Helper for looking up SAIL-specific threshold
+def get_r_c2_threshold(sail_level: str) -> float:
+    """Return R_C2 pass threshold (%) for the given SAIL level. Falls back to baseline."""
+    return R_C2_THRESHOLDS_BY_SAIL.get(sail_level, R_C2_THRESHOLD_PCT)
 
 # Metric Target Thresholds
 AVAILABILITY_TARGET = 0.98  # Research/Engineering target
@@ -20,10 +38,51 @@ STATUS_CONDITIONAL = "CONDITIONAL (Потребує додаткових дан�
 STATUS_FAIL = "FAIL (Критичні критерії не виконано)"
 STATUS_NOT_ASSESSABLE = "NOT ASSESSABLE (Недостатньо даних у логу)"
 
-WEIGHTS_SAIL_II = (0.35, 0.25, 0.25, 0.15)
-WEIGHTS_SAIL_IV = (0.25, 0.30, 0.25, 0.20)
-WEIGHTS_SAIL_VI = (0.15, 0.25, 0.30, 0.30)
-WEIGHTS_SAIL_VII = (0.10, 0.20, 0.35, 0.35)
+# -----------------------------------------------------------------------------
+# SAIL WEIGHT PROFILES (Single Source of Truth)
+# Weights order: (w_A, w_C, w_L, w_I) — Availability, Continuity, Latency, Integrity
+# Rationale: higher SAIL → higher operational risk → higher weight on latency
+# and integrity (time-critical failure modes dominate).
+# All weight vectors MUST sum to 1.0 (validated at import time).
+# -----------------------------------------------------------------------------
+SAIL_WEIGHTS = {
+    "SAIL I-II (Low Risk)":      (0.25, 0.25, 0.25, 0.25),
+    "SAIL III-IV (Medium Risk)": (0.25, 0.25, 0.25, 0.25),
+    "SAIL V-VI (High Risk)":     (0.25, 0.25, 0.25, 0.25),
+}
+
+SAIL_WEIGHTS_PROVENANCE = {
+    "source": "SESAR U-space CONOPS 4th ed. (2023), Appendix G, Table 4",
+    "source_url": "https://www.sesarju.eu/node/4544",
+    "basis": "CONOPS 4.0 defines four C2 Link performance parameters (Availability, "
+             "Continuity/PER, Integrity, Latency) as coequal aspects of link quality. "
+             "No weighting differentiation is prescribed between them or across SAIL levels. "
+             "REQ-DROC2OM-D21-PERF.0010-0030 (p.19) applies uniformly.",
+    "sail_differentiation": "SAIL-based differentiation is implemented via R_C2 PASS thresholds "
+                            "(see R_C2_THRESHOLDS_BY_SAIL), NOT via weight coefficients. "
+                            "This aligns with SORA 2.5 Annex E OSO#06 (JARUS, 2024): higher SAIL "
+                            "requires higher assurance level (Low/Medium/High) rather than "
+                            "different metric composition.",
+    "deferred_extension": "Opt B (deferred): add complementary R_C2_min = min(A, C, L, I) "
+                          "per JARUS RLP Concept p.20 'most stringent transaction' principle.",
+    "note": "Equal weights (0.25 each) are the CONOPS-aligned engineering choice. "
+            "Sensitivity to weight perturbation is quantified in the Sensitivity Analysis tab."
+}
+
+# Legacy short-form aliases for backwards compatibility
+SAIL_ALIASES = {
+    "SAIL II":  "SAIL I-II (Low Risk)",
+    "SAIL IV":  "SAIL III-IV (Medium Risk)",
+    "SAIL VI":  "SAIL V-VI (High Risk)",
+    "SAIL VII": "SAIL V-VI (High Risk)",
+}
+
+# Validation: fail fast at import time if weights are misconfigured
+for _key, _w in SAIL_WEIGHTS.items():
+    if abs(sum(_w) - 1.0) > 1e-9:
+        raise ValueError(
+            f"SAIL_WEIGHTS['{_key}'] must sum to 1.0, got {sum(_w)}"
+        )
 
 # Configuration Validation Constants
 MIN_OUTAGE_GAP_S = 2.0
@@ -590,60 +649,81 @@ def validate_configuration():
 REQUIREMENT_REGISTER = [
     {
         "id": "C2-AVA-001",
-        "title": "Доступність каналу C2 (Availability)",
-        "source": "Regulation (EU) 2021/664 Art. 13",
-        "provenance": "Обов'язкова норма ЄС (Mandatory U-space Service Rule)",
+        "title": "Доступність каналу C2 (End-to-end Availability)",
+        "source": "SESAR U-space CONOPS 4th ed. (2023), Appendix G, Table 4, REQ-DROC2OM-D21-PERF.0010, p.19",
+        "source_url": "https://www.sesarju.eu/node/4544",
+        "provenance": "Прескриптивна вимога SESAR CORUS-XUAM (U-space enabling framework)",
         "parameter": "timestamp_board_ms, seq_id",
         "metric_key": "availability",
-        "target_text": "A ≥ 98.0%",
-        "target_val": 0.98,
+        "target_text": "A ≥ 99.3%",
+        "target_val": 0.993,
         "type": "min",
         "unit": "%"
     },
     {
         "id": "C2-LAT-001",
-        "title": "Порогова затримка C2 (P95 Latency)",
-        "source": "ASTM F3548-21 / SORA 2.5 OSO#06",
-        "provenance": "Сценарний поріг затримки (Scenario Target Threshold)",
+        "title": "Порогова затримка C2 (UTM Position Update Latency)",
+        "source": "SESAR U-space CONOPS 4th ed. (2023), CORUS-XUAM-035, p.281",
+        "source_url": "https://www.sesarju.eu/node/4544",
+        "provenance": "Прескриптивна вимога SESAR CORUS-XUAM для передачі позиції/треків/алертів",
         "parameter": "timestamp_board_ms, timestamp_server_ms",
         "metric_key": "l_p95",
-        "target_text": "P95 ≤ L_threshold",
-        "target_val": None,  # Динамічно визначається scenario threshold (мс)
+        "target_text": "P95 ≤ 1000 мс (базовий U-space поріг) АБО L_threshold сценарію",
+        "target_val": 1000.0,  # Може перевизначатися динамічно через scenario/network preset
         "type": "max",
         "unit": "мс"
     },
     {
+        "id": "C2-LAT-002",
+        "title": "Затримка релею голосу ATC через C2 (Voice Relay Latency)",
+        "source": "SESAR U-space CONOPS 4th ed. (2023), CORUS-XUAM-050, p.285",
+        "source_url": "https://www.sesarju.eu/node/4544",
+        "provenance": "Прескриптивна вимога для операцій у контрольованому повітряному просторі (SAIL III-IV+)",
+        "parameter": "timestamp_board_ms, timestamp_server_ms (у режимі voice relay)",
+        "metric_key": "l_p95_voice",
+        "target_text": "Voice latency ≤ 400 мс, Availability ≥ 99.998%",
+        "target_val": 400.0,
+        "type": "max",
+        "unit": "мс",
+        "applies_to": "SAIL III-IV (Medium Risk), SAIL V-VI (High Risk)"
+    },
+    {
         "id": "C2-CON-001",
-        "title": "Часова безперервність (Continuity)",
-        "source": "JARUS RLP Concept / SORA 2.5",
-        "provenance": "Інженерна рекомендація (Engineering Guidance Threshold)",
+        "title": "Часова безперервність (Continuity / Loss Probability)",
+        "source": "JARUS RLP Concept (2023), p.20, 'most stringent transaction' principle; "
+                  "аналог з SESAR U-space CONOPS CORUS-XUAM-009 (Tactical Geofencing) для SAIL III+",
+        "source_url": "https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf",
+        "provenance": "Інженерна вимога (SORA 2.5 Annex E OSO#06 не задає прямо для C2)",
         "parameter": "timestamp_board_ms (t_gaps > 2.0s)",
         "metric_key": "continuity",
-        "target_text": "C ≥ 99.0%",
+        "target_text": "C ≥ 99.0% (Low Risk), C ≥ 99.999% (High Risk, аналог tactical geofencing)",
         "target_val": 0.99,
         "type": "min",
         "unit": "%"
     },
     {
-        "id": "C2-COM-001",
-        "title": "Повнота послідовності даних (Completeness)",
-        "source": "EUROCAE ED-269 / Data Quality Proxy",
-        "provenance": "Інженерний показник якості логу (Data Quality Proxy)",
-        "parameter": "seq_id",
+        "id": "C2-INT-001",
+        "title": "Цілісність каналу C2 (Integrity via Packet Error Rate)",
+        "source": "SESAR U-space CONOPS 4th ed. (2023), Appendix G, Table 4, REQ-DROC2OM-D21-PERF.0030, p.19",
+        "source_url": "https://www.sesarju.eu/node/4544",
+        "provenance": "Прескриптивна вимога SESAR CORUS-XUAM (PER ≤ 10⁻³ на інтерфейсі network/logical link)",
+        "parameter": "seq_id (proxy для PER через втрачені пакети)",
         "metric_key": "c2_data_completeness",
-        "target_text": "I_data ≥ 99.5%",
-        "target_val": 0.995,
+        "target_text": "I_data ≥ 99.9% (PER ≤ 10⁻³)",
+        "target_val": 0.999,
         "type": "min",
         "unit": "%"
     },
     {
         "id": "NAV-FIX-001",
-        "title": "Придатність супутникового фіксу (GNSS Quality)",
-        "source": "EASA Easy Access Rules for UAS",
-        "provenance": "Допоміжний індикатор навігації (Auxiliary Indicator)",
+        "title": "Придатність супутникового фіксу (GNSS Fix Quality)",
+        "source": "EASA Easy Access Rules for UAS (Consolidated version, ongoing updates); "
+                  "EUROCAE ED-269 для геофенсинга з GNSS",
+        "source_url": "https://www.easa.europa.eu/en/document-library/easy-access-rules",
+        "provenance": "Допоміжний навігаційний індикатор (не C2-показник; впливає на geo-caging quality)",
         "parameter": "gnss_fix_type",
         "metric_key": "i_gnss",
-        "target_text": "F_GNSS ≥ 95.0%",
+        "target_text": "F_GNSS ≥ 95.0% (fix_type ≥ 3 = 3D fix)",
         "target_val": 0.95,
         "type": "min",
         "unit": "%"

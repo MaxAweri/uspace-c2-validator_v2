@@ -124,6 +124,59 @@ if selected_scenario_preset in getattr(config, 'PRESET_EXPLANATIONS_SHORT', {}):
             st.session_state['show_docs'] = True
             st.rerun()
 
+# -----------------------------------------------------------------------------
+# L_THRESHOLD & f_up DISPLAY — прив'язані до активного пресета
+# ПРІОРИТЕТ джерела: Operation Scenario > Network Preset > Manual override
+# -----------------------------------------------------------------------------
+corridor_width = 20.0
+l_threshold_default = 1000
+f_up = 2.5
+sail_level_from_preset = None
+l_threshold_source = None
+l_threshold_locked = False
+
+if selected_scenario_preset != t["preset_none"]:
+    sc_params = config.SCENARIO_PRESETS[selected_scenario_preset]["params"]
+    corridor_width = sc_params["corridor_width"]
+    l_threshold_default = sc_params["l_threshold"]
+    f_up = sc_params["f_up"]
+    sail_level_from_preset = sc_params["sail"]
+    l_threshold_source = f"🛸 Operation Scenario: {selected_scenario_preset}"
+    l_threshold_locked = True
+elif selected_network_preset != t["preset_none"]:
+    net_params = config.NETWORK_PRESETS[selected_network_preset]["params"]
+    l_threshold_default = net_params["l_threshold"]
+    f_up = net_params["f_up"]
+    l_threshold_source = f"⚡ Network Preset: {selected_network_preset}"
+    l_threshold_locked = True
+else:
+    l_threshold_source = "✋ Manual override (no preset active)"
+    l_threshold_locked = False
+
+l_threshold_ms = st.sidebar.slider(
+    label=t["latency_threshold"],
+    min_value=50,
+    max_value=2500,
+    value=int(l_threshold_default),
+    step=50,
+    disabled=l_threshold_locked,
+    help=f"Джерело значення: {l_threshold_source}. "
+         f"Щоб рухати повзунок вручну, скиньте обидва пресети на '-- Оберіть пресет --'."
+)
+
+if l_threshold_locked:
+    st.sidebar.caption(f"🔒 {l_threshold_source}")
+else:
+   st.sidebar.caption(f"🎚️ {l_threshold_source}")
+
+st.sidebar.metric(
+    label="Мінімальна частота f_up (Гц)",
+    value=f"{f_up:.2f} Hz",
+    help="Тягнеться з активного пресету. Порівнюється з фактичною частотою логу (CHK-005)."
+)
+
+st.sidebar.markdown("---")
+
 # 3. GNSS Mode Selector
 gnss_mode = st.sidebar.selectbox(
     t["gnss_mode"],
@@ -143,6 +196,15 @@ sail_select = st.sidebar.selectbox(
 )
 st.session_state.selected_sail_idx = ["SAIL I-II (Low Risk)", "SAIL III-IV (Medium Risk)", "SAIL V-VI (High Risk)"].index(sail_select)
 
+# Пресет сценарію ПЕРЕЗАПИСУЄ SAIL з селектора (нормативна консистентність)
+if sail_level_from_preset is not None:
+    sail_level = sail_level_from_preset
+    _sail_options = ["SAIL I-II (Low Risk)", "SAIL III-IV (Medium Risk)", "SAIL V-VI (High Risk)"]
+    if sail_level in _sail_options:
+        st.session_state.selected_sail_idx = _sail_options.index(sail_level)
+else:
+    sail_level = sail_select
+
 # Monte Carlo reproducibility controls
 st.sidebar.markdown("### Відтворюваність Монте-Карло")
 seed = st.sidebar.number_input("Random Seed", value=42, min_value=0, help="Сид для відтворюваності результатів Монте-Карло симуляції")
@@ -152,32 +214,6 @@ rng = np.random.default_rng(seed)
 
 st.sidebar.markdown("---")
 
-# ПРІОРИТЕТНОСТЕЙ: Операційний сценарій (SORA) ВИЗНАЧАЄ поріг безпеки L_threshold та f_up
-corridor_width = 20.0
-l_threshold_ms = 1000
-f_up = 2.5
-sail_level = "SAIL I-II (Low Risk)"
-
-if selected_scenario_preset != t["preset_none"]:
-    sc_params = config.SCENARIO_PRESETS[selected_scenario_preset]["params"]
-    corridor_width = sc_params["corridor_width"]
-    l_threshold_ms = sc_params["l_threshold"]
-    f_up = sc_params["f_up"]
-    sail_level = sc_params["sail"]
-    # Sync session state with preset sail value
-    sail_options = ["SAIL I-II (Low Risk)", "SAIL III-IV (Medium Risk)", "SAIL V-VI (High Risk)"]
-    if sail_level in sail_options:
-        st.session_state.selected_sail_idx = sail_options.index(sail_level)
-elif selected_network_preset != t["preset_none"]:
-    net_params = config.NETWORK_PRESETS[selected_network_preset]["params"]
-    l_threshold_ms = net_params["l_threshold"]
-    f_up = net_params["f_up"]
-    # Use sail_select from sidebar when no scenario preset
-    sail_level = sail_select
-else:
-    # No presets selected - use sidebar sail_select and manual l_threshold
-    sail_level = sail_select
-    l_threshold_ms = st.sidebar.number_input(t["latency_threshold"], 100, 2000, 1000, 50)
 
 # Add these lines after line 22 (SESSION STATE INITIALIZATION section)
 if 'current_df' not in st.session_state:
@@ -353,21 +389,14 @@ def compute_metrics(df, l_threshold_ms, f_up, sail_level, gnss_mode):
     else:
         f_gnss = 1.0
 
-    # 6. Weights definition according to SAIL level
-    SAIL_WEIGHTS = {
-        "SAIL I-II (Low Risk)": (0.35, 0.25, 0.20, 0.20),
-        "SAIL III-IV (Medium Risk)": (0.25, 0.25, 0.25, 0.25),
-        "SAIL V-VI (High Risk)": (0.15, 0.25, 0.30, 0.30)
-    }
-    # Auto-map short SAIL strings (e.g., "SAIL II") to normalized keys
-    sail_level_normalized = sail_level
-    if sail_level == "SAIL II":
-        sail_level_normalized = "SAIL I-II (Low Risk)"
-    elif sail_level == "SAIL IV":
-        sail_level_normalized = "SAIL III-IV (Medium Risk)"
-    elif sail_level == "SAIL VI":
-        sail_level_normalized = "SAIL V-VI (High Risk)"
-    w_A, w_C, w_L, w_I = SAIL_WEIGHTS.get(sail_level_normalized, (0.25, 0.25, 0.25, 0.25))
+    # 6. Weights per SAIL profile — single source of truth in config.SAIL_WEIGHTS
+    sail_level_normalized = config.SAIL_ALIASES.get(sail_level, sail_level)
+    if sail_level_normalized not in config.SAIL_WEIGHTS:
+        raise ValueError(
+            f"Unknown SAIL profile '{sail_level}'. "
+            f"Expected one of: {list(config.SAIL_WEIGHTS.keys())}"
+        )
+    w_A, w_C, w_L, w_I = config.SAIL_WEIGHTS[sail_level_normalized]
 
     # 7. Control Checks (CHK-001 ... CHK-005)
     sanity_results = []
@@ -436,6 +465,8 @@ def compute_metrics(df, l_threshold_ms, f_up, sail_level, gnss_mode):
     R_C2_pct = R_C2 * 100.0
 
     # 10. Store results in session state
+    if st.session_state.get('last_results') is None:
+        st.session_state['last_results'] = {}
     st.session_state['last_results'].update({
         "dataset_hash": dataset_hash,
         "sample_count": sample_count,
@@ -567,11 +598,14 @@ if continuity < config.CONTINUITY_TARGET:
 if l_p95 > l_threshold_ms:
     constraint_violations.append(f"Затримка P95: {l_p95:.1f}мс > {l_threshold_ms}мс")
 
+# SAIL-specific R_C2 pass threshold (differentiated per SORA 2.5 Annex E OSO#06 assurance level)
+r_c2_threshold = config.get_r_c2_threshold(sail_level)
+
 # Determine overall status
 if constraint_violations:
     status = config.STATUS_FAIL
 else:
-    if R_C2_pct >= config.R_C2_THRESHOLD_PCT:
+    if R_C2_pct >= r_c2_threshold:
         status = config.STATUS_PASS
     else:
         status = config.STATUS_CONDITIONAL
@@ -582,7 +616,7 @@ with col_status:
     st.metric(
         label=t["readiness_level"],
         value=f"{R_C2_pct:.1f}%",
-        delta=f"{R_C2_pct - config.R_C2_THRESHOLD_PCT:.1f}% {t['threshold_text']}"
+     delta=f"{R_C2_pct - r_c2_threshold:.1f}% від порогу {r_c2_threshold:.0f}% (SAIL: {sail_level})"
     )
 with col_verdict:
     st.markdown(f"### {t['verdict_header']}")
