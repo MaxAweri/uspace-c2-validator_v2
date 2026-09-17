@@ -546,9 +546,34 @@ def compute_metrics(df, l_threshold_ms, f_up, sail_level, gnss_mode):
     # Model 3: Minimum Criterion (Weakest Link)
     r_min = min(availability, continuity, f_L, c2_data_completeness)
 
-    # 9. Final R_C2 Calculation
+        # 9. Final R_C2 Calculation (weighted arithmetic mean — aggregate index)
     R_C2 = w_A * availability + w_C * continuity + w_L * f_L + w_I * c2_data_completeness
     R_C2_pct = R_C2 * 100.0
+        # 9b. R_C2_min (RLP-strict, min-consensus verdict)
+    # JARUS RLP Concept p.20: "most stringent transaction" principle
+    R_C2_min_val = min(availability, continuity, f_L, c2_data_completeness)
+    R_C2_min_pct = R_C2_min_val * 100.0
+    _component_map = {
+        'Availability': availability,
+        'Continuity': continuity,
+        'Latency Factor': f_L,
+        'Completeness': c2_data_completeness,
+    }
+    R_C2_min_component = min(_component_map, key=_component_map.get)
+
+    # 9b. R_C2_min (RLP-strict, min-consensus verdict)
+    # JARUS RLP Concept p.20: "most stringent transaction" principle
+    # Reveals the worst-performing component; complements weighted R_C2 to prevent aggregate masking.
+    R_C2_min_val = min(availability, continuity, f_L, c2_data_completeness)
+    R_C2_min_pct = R_C2_min_val * 100.0
+    # Identify which component is the weakest (для UI caption та вердикту)
+    _component_map = {
+        'Availability': availability,
+        'Continuity': continuity,
+        'Latency Factor': f_L,
+        'Completeness': c2_data_completeness,
+    }
+    R_C2_min_component = min(_component_map, key=_component_map.get)
 
     # 10. Store results in session state
     if st.session_state.get('last_results') is None:
@@ -573,6 +598,10 @@ def compute_metrics(df, l_threshold_ms, f_up, sail_level, gnss_mode):
         'f_gnss': f_gnss,
         'R_C2': R_C2,
         'R_C2_pct': R_C2_pct,
+        'R_C2_min_pct': R_C2_min_pct,
+        'R_C2_min_component': R_C2_min_component,
+        'R_C2_min_pct': R_C2_min_pct,
+        'R_C2_min_component': R_C2_min_component,
         'l_p95': l_p95,
         'mean_latency': mean_latency,
         'w_A': w_A,
@@ -667,6 +696,10 @@ c2_data_completeness = results['c2_data_completeness']
 f_gnss = results['f_gnss']
 R_C2 = results['R_C2']
 R_C2_pct = results['R_C2_pct']
+R_C2_min_pct = results['R_C2_min_pct']
+R_C2_min_component = results['R_C2_min_component']
+R_C2_min_pct = results['R_C2_min_pct']
+R_C2_min_component = results['R_C2_min_component']
 l_p95 = results['l_p95']
 mean_latency = results['mean_latency']
 w_A, w_C, w_L, w_I = results['w_A'], results['w_C'], results['w_L'], results['w_I']
@@ -684,6 +717,14 @@ if continuity < config.CONTINUITY_TARGET:
 if l_p95 > l_threshold_ms:
     constraint_violations.append(f"Затримка P95: {l_p95:.1f}мс > {l_threshold_ms}мс")
 
+# Hard constraint: R_C2_min (RLP-strict floor per JARUS RLP p.20 "most stringent")
+if R_C2_min_pct < config.R_C2_MIN_THRESHOLD_PCT:
+    constraint_violations.append(
+        f"R_C2_min = {R_C2_min_pct:.1f}% < {config.R_C2_MIN_THRESHOLD_PCT:.0f}% "
+        f"(worst component: {R_C2_min_component}) — JARUS RLP min-consensus floor"
+    )
+
+
 # SAIL-specific R_C2 pass threshold (differentiated per SORA 2.5 Annex E OSO#06 assurance level)
 r_c2_threshold = config.get_r_c2_threshold(sail_level)
 
@@ -699,10 +740,27 @@ else:
 col_status, col_verdict = st.columns([1, 2])
 with col_status:
     st.markdown(f"### {t['integral_indicator']}")
+    # R_C2 weighted (aggregate)
+    _r_c2_delta = R_C2_pct - r_c2_threshold
+    _r_c2_delta_str = f"{_r_c2_delta:+.1f}% від порогу {r_c2_threshold:.0f}% (SAIL: {sail_level})"
     st.metric(
         label=t["readiness_level"],
         value=f"{R_C2_pct:.1f}%",
-     delta=f"{R_C2_pct - r_c2_threshold:.1f}% від порогу {r_c2_threshold:.0f}% (SAIL: {sail_level})"
+        delta=_r_c2_delta_str,
+        delta_color="normal",
+        help="Weighted arithmetic mean of 4 components (A, C, L, I). "
+             "Aggregate index for SAIL-differentiated verdict."
+    )
+    # R_C2_min (RLP-strict, worst component)
+    _r_c2_min_delta = R_C2_min_pct - config.R_C2_MIN_THRESHOLD_PCT
+    _r_c2_min_delta_str = f"{_r_c2_min_delta:+.1f}% від floor {config.R_C2_MIN_THRESHOLD_PCT:.0f}% ({R_C2_min_component})"
+    st.metric(
+        label="R_C2_min (RLP-strict)",
+        value=f"{R_C2_min_pct:.1f}%",
+        delta=_r_c2_min_delta_str,
+        delta_color="normal",
+        help="Min-consensus verdict per JARUS RLP p.20 'most stringent transaction' principle. "
+             "Reveals the worst-performing component. Absolute floor 70% (unfit for purpose)."
     )
 with col_verdict:
     st.markdown(f"### {t['verdict_header']}")

@@ -25,6 +25,230 @@ def get_r_c2_threshold(sail_level: str) -> float:
     """Return R_C2 pass threshold (%) for the given SAIL level. Falls back to baseline."""
     return R_C2_THRESHOLDS_BY_SAIL.get(sail_level, R_C2_THRESHOLD_PCT)
 
+# -----------------------------------------------------------------------------
+# R_C2_MIN THRESHOLD (min-consensus / RLP-strict verdict)
+# Джерело: JARUS RLP Concept (2023), p.20 — "most stringent transaction" principle:
+#   "The global value for each parameter is based on the parameter achieving
+#    the MOST STRINGENT transaction. For example, the availability is the
+#    availability of the least available link element, not the mean."
+# https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf
+#
+# Rationale: weighted arithmetic mean R_C2 може маскувати критично низький
+# окремий компонент (aggregate masking). R_C2_min = min(A, C, L, I) відображає
+# принцип series reliability (система послідовних елементів = найслабший компонент).
+# Threshold 70% — універсальний "unfit for purpose" floor, недиференційований
+# по SAIL (це absolute worst-case, не SAIL-specific target).
+# SAIL differentiation реалізована через R_C2_THRESHOLDS_BY_SAIL (weighted verdict).
+# -----------------------------------------------------------------------------
+R_C2_MIN_THRESHOLD_PCT = 70.0
+
+R_C2_MIN_PROVENANCE = {
+    "source": "JARUS RLP Concept (2023), p.20",
+    "source_url": "https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf",
+    "principle": "Most stringent transaction (min-consensus, series reliability)",
+    "formula": "R_C2_min = min(A_norm, C_norm, L_norm, I_norm)",
+    "rationale": "Complements weighted arithmetic R_C2 by exposing the worst-performing component. "
+                 "Prevents 'aggregate masking' where one critically low metric is hidden by averaging.",
+    "threshold_choice": "70% — universal 'unfit for purpose' engineering floor. "
+                        "Not differentiated by SAIL (SAIL differentiation is via R_C2_THRESHOLDS_BY_SAIL)."
+}
+
+# -----------------------------------------------------------------------------
+# R_C2_MIN THRESHOLD (min-consensus / RLP-strict verdict)
+# Джерело: JARUS RLP Concept (2023), p.20 — "most stringent transaction" principle:
+#   "The global value for each parameter is based on the parameter achieving
+#    the MOST STRINGENT transaction. For example, the availability is the
+#    availability of the least available link element, not the mean."
+# https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf
+#
+# Rationale: weighted arithmetic mean R_C2 може маскувати критично низький
+# окремий компонент (aggregate masking). R_C2_min = min(A, C, L, I) відображає
+# принцип series reliability (система послідовних елементів = найслабший компонент).
+# Threshold 70% — універсальний "unfit for purpose" floor, недиференційований
+# по SAIL (це absolute worst-case, не SAIL-specific target).
+# SAIL differentiation реалізована через R_C2_THRESHOLDS_BY_SAIL (weighted verdict).
+# -----------------------------------------------------------------------------
+R_C2_MIN_THRESHOLD_PCT = 70.0
+
+R_C2_MIN_PROVENANCE = {
+    "source": "JARUS RLP Concept (2023), p.20",
+    "source_url": "https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf",
+    "principle": "Most stringent transaction (min-consensus, series reliability)",
+    "formula": "R_C2_min = min(A_norm, C_norm, L_norm, I_norm)",
+    "rationale": "Complements weighted arithmetic R_C2 by exposing the worst-performing component. "
+                 "Prevents 'aggregate masking' where one critically low metric is hidden by averaging.",
+    "threshold_choice": "70% — universal 'unfit for purpose' engineering floor. "
+                        "Not differentiated by SAIL (SAIL differentiation is via R_C2_THRESHOLDS_BY_SAIL)."
+}
+
+# -----------------------------------------------------------------------------
+# R_C2_MIN THRESHOLD (min-consensus / RLP-strict verdict)
+# Джерело: JARUS RLP Concept (2023), p.20 — "most stringent transaction" principle:
+#   "The global value for each parameter is based on the parameter achieving
+#    the MOST STRINGENT transaction. For example, the availability is the
+#    availability of the least available link element, not the mean."
+# https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf
+#
+# Rationale: weighted arithmetic mean R_C2 може маскувати критично низький
+# окремий компонент (aggregate masking). R_C2_min = min(A, C, L, I) відображає
+# принцип series reliability (система послідовних елементів = найслабший компонент).
+# Threshold 70% — універсальний "unfit for purpose" floor, недиференційований
+# по SAIL (це absolute worst-case, не SAIL-specific target).
+# SAIL differentiation реалізована через R_C2_THRESHOLDS_BY_SAIL (weighted verdict).
+# -----------------------------------------------------------------------------
+R_C2_MIN_THRESHOLD_PCT = 70.0
+
+R_C2_MIN_PROVENANCE = {
+    "source": "JARUS RLP Concept (2023), p.20",
+    "source_url": "https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf",
+    "principle": "Most stringent transaction (min-consensus, series reliability)",
+    "formula": "R_C2_min = min(A_norm, C_norm, L_norm, I_norm)",
+    "rationale": "Complements weighted arithmetic R_C2 by exposing the worst-performing component. "
+                 "Prevents 'aggregate masking' where one critically low metric is hidden by averaging.",
+    "threshold_choice": "70% — universal 'unfit for purpose' engineering floor. "
+                        "Not differentiated by SAIL (SAIL differentiation is via R_C2_THRESHOLDS_BY_SAIL)."
+}
+
+# -----------------------------------------------------------------------------
+# R_C2_MIN THRESHOLD (min-consensus / RLP-strict verdict)
+# Джерело: JARUS RLP Concept (2023), p.20 — "most stringent transaction" principle:
+#   "The global value for each parameter is based on the parameter achieving
+#    the MOST STRINGENT transaction. For example, the availability is the
+#    availability of the least available link element, not the mean."
+# https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf
+#
+# Rationale: weighted arithmetic mean R_C2 може маскувати критично низький
+# окремий компонент (aggregate masking). R_C2_min = min(A, C, L, I) відображає
+# принцип series reliability (система послідовних елементів = найслабший компонент).
+# Threshold 70% — універсальний "unfit for purpose" floor, недиференційований
+# по SAIL (це absolute worst-case, не SAIL-specific target).
+# SAIL differentiation реалізована через R_C2_THRESHOLDS_BY_SAIL (weighted verdict).
+# -----------------------------------------------------------------------------
+R_C2_MIN_THRESHOLD_PCT = 70.0
+
+R_C2_MIN_PROVENANCE = {
+    "source": "JARUS RLP Concept (2023), p.20",
+    "source_url": "https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf",
+    "principle": "Most stringent transaction (min-consensus, series reliability)",
+    "formula": "R_C2_min = min(A_norm, C_norm, L_norm, I_norm)",
+    "rationale": "Complements weighted arithmetic R_C2 by exposing the worst-performing component. "
+                 "Prevents 'aggregate masking' where one critically low metric is hidden by averaging.",
+    "threshold_choice": "70% — universal 'unfit for purpose' engineering floor. "
+                        "Not differentiated by SAIL (SAIL differentiation is via R_C2_THRESHOLDS_BY_SAIL)."
+}
+
+# -----------------------------------------------------------------------------
+# R_C2_MIN THRESHOLD (min-consensus / RLP-strict verdict)
+# Джерело: JARUS RLP Concept (2023), p.20 — "most stringent transaction" principle:
+#   "The global value for each parameter is based on the parameter achieving
+#    the MOST STRINGENT transaction. For example, the availability is the
+#    availability of the least available link element, not the mean."
+# https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf
+#
+# Rationale: weighted arithmetic mean R_C2 може маскувати критично низький
+# окремий компонент (aggregate masking). R_C2_min = min(A, C, L, I) відображає
+# принцип series reliability (система послідовних елементів = найслабший компонент).
+# Threshold 70% — універсальний "unfit for purpose" floor, недиференційований
+# по SAIL (це absolute worst-case, не SAIL-specific target).
+# SAIL differentiation реалізована через R_C2_THRESHOLDS_BY_SAIL (weighted verdict).
+# -----------------------------------------------------------------------------
+R_C2_MIN_THRESHOLD_PCT = 70.0
+
+R_C2_MIN_PROVENANCE = {
+    "source": "JARUS RLP Concept (2023), p.20",
+    "source_url": "https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf",
+    "principle": "Most stringent transaction (min-consensus, series reliability)",
+    "formula": "R_C2_min = min(A_norm, C_norm, L_norm, I_norm)",
+    "rationale": "Complements weighted arithmetic R_C2 by exposing the worst-performing component. "
+                 "Prevents 'aggregate masking' where one critically low metric is hidden by averaging.",
+    "threshold_choice": "70% — universal 'unfit for purpose' engineering floor. "
+                        "Not differentiated by SAIL (SAIL differentiation is via R_C2_THRESHOLDS_BY_SAIL)."
+}
+
+# -----------------------------------------------------------------------------
+# R_C2_MIN THRESHOLD (min-consensus / RLP-strict verdict)
+# Джерело: JARUS RLP Concept (2023), p.20 — "most stringent transaction" principle:
+#   "The global value for each parameter is based on the parameter achieving
+#    the MOST STRINGENT transaction. For example, the availability is the
+#    availability of the least available link element, not the mean."
+# https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf
+#
+# Rationale: weighted arithmetic mean R_C2 може маскувати критично низький
+# окремий компонент (aggregate masking). R_C2_min = min(A, C, L, I) відображає
+# принцип series reliability (система послідовних елементів = найслабший компонент).
+# Threshold 70% — універсальний "unfit for purpose" floor, недиференційований
+# по SAIL (це absolute worst-case, не SAIL-specific target).
+# SAIL differentiation реалізована через R_C2_THRESHOLDS_BY_SAIL (weighted verdict).
+# -----------------------------------------------------------------------------
+R_C2_MIN_THRESHOLD_PCT = 70.0
+
+R_C2_MIN_PROVENANCE = {
+    "source": "JARUS RLP Concept (2023), p.20",
+    "source_url": "https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf",
+    "principle": "Most stringent transaction (min-consensus, series reliability)",
+    "formula": "R_C2_min = min(A_norm, C_norm, L_norm, I_norm)",
+    "rationale": "Complements weighted arithmetic R_C2 by exposing the worst-performing component. "
+                 "Prevents 'aggregate masking' where one critically low metric is hidden by averaging.",
+    "threshold_choice": "70% — universal 'unfit for purpose' engineering floor. "
+                        "Not differentiated by SAIL (SAIL differentiation is via R_C2_THRESHOLDS_BY_SAIL)."
+}
+
+# -----------------------------------------------------------------------------
+# R_C2_MIN THRESHOLD (min-consensus / RLP-strict verdict)
+# Джерело: JARUS RLP Concept (2023), p.20 — "most stringent transaction" principle:
+#   "The global value for each parameter is based on the parameter achieving
+#    the MOST STRINGENT transaction. For example, the availability is the
+#    availability of the least available link element, not the mean."
+# https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf
+#
+# Rationale: weighted arithmetic mean R_C2 може маскувати критично низький
+# окремий компонент (aggregate masking). R_C2_min = min(A, C, L, I) відображає
+# принцип series reliability (система послідовних елементів = найслабший компонент).
+# Threshold 70% — універсальний "unfit for purpose" floor, недиференційований
+# по SAIL (це absolute worst-case, не SAIL-specific target).
+# SAIL differentiation реалізована через R_C2_THRESHOLDS_BY_SAIL (weighted verdict).
+# -----------------------------------------------------------------------------
+R_C2_MIN_THRESHOLD_PCT = 70.0
+
+R_C2_MIN_PROVENANCE = {
+    "source": "JARUS RLP Concept (2023), p.20",
+    "source_url": "https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf",
+    "principle": "Most stringent transaction (min-consensus, series reliability)",
+    "formula": "R_C2_min = min(A_norm, C_norm, L_norm, I_norm)",
+    "rationale": "Complements weighted arithmetic R_C2 by exposing the worst-performing component. "
+                 "Prevents 'aggregate masking' where one critically low metric is hidden by averaging.",
+    "threshold_choice": "70% — universal 'unfit for purpose' engineering floor. "
+                        "Not differentiated by SAIL (SAIL differentiation is via R_C2_THRESHOLDS_BY_SAIL)."
+}
+
+# -----------------------------------------------------------------------------
+# R_C2_MIN THRESHOLD (min-consensus / RLP-strict verdict)
+# Джерело: JARUS RLP Concept (2023), p.20 — "most stringent transaction" principle:
+#   "The global value for each parameter is based on the parameter achieving
+#    the MOST STRINGENT transaction. For example, the availability is the
+#    availability of the least available link element, not the mean."
+# https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf
+#
+# Rationale: weighted arithmetic mean R_C2 може маскувати критично низький
+# окремий компонент (aggregate masking). R_C2_min = min(A, C, L, I) відображає
+# принцип series reliability (система послідовних елементів = найслабший компонент).
+# Threshold 70% — універсальний "unfit for purpose" floor, недиференційований
+# по SAIL (це absolute worst-case, не SAIL-specific target).
+# SAIL differentiation реалізована через R_C2_THRESHOLDS_BY_SAIL (weighted verdict).
+# -----------------------------------------------------------------------------
+R_C2_MIN_THRESHOLD_PCT = 70.0
+
+R_C2_MIN_PROVENANCE = {
+    "source": "JARUS RLP Concept (2023), p.20",
+    "source_url": "https://jarus-rpas.org/wp-content/uploads/2023/06/jar_05_doc_rlp_concept_upgraded.pdf",
+    "principle": "Most stringent transaction (min-consensus, series reliability)",
+    "formula": "R_C2_min = min(A_norm, C_norm, L_norm, I_norm)",
+    "rationale": "Complements weighted arithmetic R_C2 by exposing the worst-performing component. "
+                 "Prevents 'aggregate masking' where one critically low metric is hidden by averaging.",
+    "threshold_choice": "70% — universal 'unfit for purpose' engineering floor. "
+                        "Not differentiated by SAIL (SAIL differentiation is via R_C2_THRESHOLDS_BY_SAIL)."
+}
+
 # Metric Target Thresholds
 # Джерело: SESAR U-space CONOPS 4th ed. (2023), Appendix G, Table 4 (p.19)
 # https://www.sesarju.eu/node/4544
