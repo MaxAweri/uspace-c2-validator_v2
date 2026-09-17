@@ -226,7 +226,35 @@ if 'last_uploaded_filename' not in st.session_state:
 # -----------------------------------------------------------------------------
 @st.cache_data
 def load_data(file_path_or_buffer):
-    return pd.read_csv(file_path_or_buffer)
+    """Robust CSV loader with user-friendly error messages.
+    Handles: empty files, wrong delimiter, bad encoding, missing columns.
+    FileNotFoundError is propagated up (не показуємо помилку — це dev fallback).
+    """
+    try:
+        df = pd.read_csv(file_path_or_buffer)
+    except FileNotFoundError:
+        raise  # propagate — обробляється у виклику (demo fallback)
+    except pd.errors.EmptyDataError:
+        st.error("❌ Помилка зчитування CSV: файл порожній або містить лише заголовки.")
+        st.stop()
+    except UnicodeDecodeError:
+        st.error("❌ Помилка кодування CSV: очікується UTF-8. Перекодуйте файл або збережіть як UTF-8.")
+        st.stop()
+    except pd.errors.ParserError as e:
+        st.error(f"❌ Помилка структури CSV: {e}. Перевірте роздільник (має бути кома) та кодування.")
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ Непередбачена помилка зчитування CSV: {e}")
+        st.stop()
+
+    if len(df.columns) == 1:
+        st.error(
+            "❌ CSV містить лише одну колонку. Ймовірно, використано неправильний роздільник "
+            "(наприклад, ';' замість ','). Перезбережіть файл з розділювачем-комою."
+        )
+        st.stop()
+
+    return df
 
 if uploaded_file is not None:
     current_file_id = f"{uploaded_file.name}_{uploaded_file.size}"
@@ -243,8 +271,52 @@ else:
             df = load_data("flight_telemetry_log.csv")
             st.session_state['current_df'] = df
             st.sidebar.info(t["demo_log"])
+        except FileNotFoundError:
+            # Welcome screen: показуємо вимоги до CSV
+            st.markdown("## 👋 Ласкаво просимо до U-space C2 Screening Tool")
+            st.info(
+                "**Крок 1.** Завантажте CSV-файл телеметрії у лівій панелі: "
+                "«📁 Завантажити лог телеметрії»."
+            )
+
+            with st.expander("📋 Вимоги до структури CSV-файлу", expanded=True):
+                st.markdown("""
+                CSV-файл має містити такі обов'язкові колонки:
+
+                | Колонка | Тип | Опис |
+                |---|---|---|
+                | `timestamp_board_ms` | int (мс) | Часова позначка на борту (моноклон. зростає) |
+                | `timestamp_server_ms` | int (мс) | Часова позначка на USSP-сервері |
+                | `seq_id` | int | Послідовний номер пакета телеметрії |
+                | `lat` | float | Широта (WGS-84) |
+                | `lon` | float | Довгота (WGS-84) |
+                | `alt` | float (м) | Висота над рівнем моря |
+                | `gnss_fix_type` | int | Тип GNSS-фіксу (2=2D, 3=3D, 4=RTK) |
+
+                **Формат:**
+                - Роздільник: **кома** (`,`)
+                - Кодування: **UTF-8**
+                - Мінімальна тривалість логу: **10 секунд**
+                - Немає порожніх рядків або дублікатів `seq_id`
+                """)
+
+            with st.expander("💡 Звідки взяти такий CSV?"):
+                st.markdown("""
+                Ви можете отримати телеметрію MAVLink з бортового автопілоту (PX4, ArduPilot):
+
+                1. **З логу польоту (.tlog / .ulg / .bin):** конвертувати у CSV через
+                   [MAVLink-router](https://github.com/mavlink-router/mavlink-router),
+                   [pymavlink](https://github.com/ArduPilot/pymavlink), або
+                   [Mission Planner](https://ardupilot.org/planner/).
+                2. **З live-стріму:** запустити скрипт-логер під час польоту, який
+                   зберігає MAVLink `GLOBAL_POSITION_INT` та `HEARTBEAT` у CSV.
+                3. **Тестовий приклад:** використайте наш конвертер MAVLink→CSV
+                   (у репозиторії проєкту).
+                """)
+
+            st.stop()
         except Exception:
-            st.error("Будь ласка, завантажте CSV-файл телеметрії.")
+            st.error("❌ Непередбачена помилка при завантаженні demo-файлу. Завантажте свій CSV.")
             st.stop()
     df = st.session_state['current_df']
 
@@ -344,8 +416,13 @@ def compute_metrics(df, l_threshold_ms, f_up, sail_level, gnss_mode):
     time_window_str = f"Duration: {duration_s:.1f}s (Board TS: {t_start_ms}ms - {t_end_ms}ms)"
 
     # 2. Clock Drift Correction & Latency Metrics
+    # ROBUST offset estimator: 5-й перцентиль замість np.min(), нечутливий
+    # до одиничних викидів синхронізації (напр. одиничний рядок з -500 мс
+    # раніше зсував ВЕСЬ масив затримок на +500 мс і давав хибний P95).
+    # За наявності PTP/NTP-синхронізації цю евристику слід замінити
+    # на точний timestamp-обмін. Джерело метрики: baseline offset estimation.
     raw_latencies = df['timestamp_server_ms'] - df['timestamp_board_ms']
-    clock_offset = np.min(raw_latencies)
+    clock_offset = np.percentile(raw_latencies, 5)
     latencies = np.maximum(raw_latencies - clock_offset, 1.0)
     l_p95 = np.percentile(latencies, 95)
     mean_latency = np.mean(latencies)
@@ -427,14 +504,23 @@ def compute_metrics(df, l_threshold_ms, f_up, sail_level, gnss_mode):
         "details": f"Тривалість {duration_s:.1f}s (≥ 10s)" if dur_passed else f"Занадто короткий лог ({duration_s:.1f}s < 10s)"
     })
 
-    # CHK-004: Zero/Negative Delay
+    # CHK-004: Zero/Negative Delay + Clock Drift Diagnostic
     raw_lat = df['timestamp_server_ms'] - df['timestamp_board_ms']
     neg_lat_count = (raw_lat < 0).sum()
+    raw_min = float(raw_lat.min())
     delay_passed = bool(neg_lat_count == 0)
+    if delay_passed:
+        chk004_details = "Часові позначки сервера та борту узгоджени"
+    else:
+        chk004_details = (
+            f"Виявлено {neg_lat_count} від'ємних затримок (min raw = {raw_min:.0f} мс). "
+            f"Ймовірна десинхронізація або відсутність NTP/PTP. Оцінка зсуву виконана "
+            f"через 5-й перцентиль (robust baseline); результати slightly conservative."
+        )
     sanity_results.append({
         "id": "CHK-004", "name": "Clock Relation Check",
         "passed": delay_passed,
-        "details": "Часові позначки сервера та борту узгоджени" if delay_passed else f"Виявлено {neg_lat_count} від'ємних затримок"
+        "details": chk004_details
     })
 
     # CHK-005: Sampling Rate Alignment
@@ -781,17 +867,51 @@ with tab_monte_carlo:
     sim_R_C2 = w_A * sim_availability + w_C * sim_continuity + w_L * sim_f_L + w_I * sim_completeness
     sim_R_C2_pct = sim_R_C2 * 100.0
 
-    # Calculate 95% confidence interval
+    # Calculate confidence intervals (95% and median) — Uncertainty Quantification
     ci_lower = np.percentile(sim_R_C2_pct, 2.5)
     ci_upper = np.percentile(sim_R_C2_pct, 97.5)
+    ci_median = np.percentile(sim_R_C2_pct, 50)
+    ci_mean = np.mean(sim_R_C2_pct)
+
+    # SAIL-specific threshold (not hardcoded 80%)
+    mc_threshold = config.get_r_c2_threshold(config.SAIL_ALIASES.get(sail_level, sail_level))
 
     fig_mc = px.histogram(x=sim_R_C2_pct, nbins=50, labels={'x': t["monte_carlo_xlabel"], 'y': t["monte_carlo_ylabel"]})
-    fig_mc.add_vline(x=config.R_C2_THRESHOLD_PCT, line_dash="dash", line_color="red", annotation_text="80% Threshold")
+    fig_mc.add_vline(x=mc_threshold, line_dash="dash", line_color="red",
+                     annotation_text=f"Поріг {mc_threshold:.0f}% ({sail_level})")
+    fig_mc.add_vline(x=ci_lower, line_dash="dot", line_color="orange", annotation_text="P2.5")
+    fig_mc.add_vline(x=ci_upper, line_dash="dot", line_color="orange", annotation_text="P97.5")
+    fig_mc.add_vline(x=ci_median, line_dash="solid", line_color="green", annotation_text="Median")
     st.plotly_chart(fig_mc, width='stretch')
 
-    prob_success = np.mean(sim_R_C2_pct >= config.R_C2_THRESHOLD_PCT) * 100.0
-    st.metric(label=t["probability_text"].split("=")[0], value=f"{prob_success:.1f}%", delta=f"Mean R_C2: {np.mean(sim_R_C2_pct):.1f}%")
-    st.write(f"95% довірчий інтервал: [{ci_lower:.1f}%, {ci_upper:.1f}%]")
+    prob_success = np.mean(sim_R_C2_pct >= mc_threshold) * 100.0
+
+    mc_col1, mc_col2, mc_col3 = st.columns(3)
+    mc_col1.metric(
+        label=f"P(R_C2 ≥ {mc_threshold:.0f}%)",
+        value=f"{prob_success:.1f}%",
+        help=f"Ймовірність, що R_C2 у симуляції ≥ SAIL-порогу {mc_threshold:.0f}%"
+    )
+    mc_col2.metric(
+        label="Mean R_C2 [95% CI]",
+        value=f"{ci_mean:.1f}%",
+        delta=f"±{(ci_upper - ci_lower) / 2:.1f}%",
+        delta_color="off",
+        help=f"95% довірчий інтервал: [{ci_lower:.1f}% ... {ci_upper:.1f}%]"
+    )
+    mc_col3.metric(
+        label="Median R_C2",
+        value=f"{ci_median:.1f}%",
+        help="Робастна центральна оцінка (нечутлива до асиметрії розподілу)"
+    )
+
+    st.caption(
+        f"📊 **Uncertainty Quantification (n={n_simulations} симуляцій):** "
+        f"Mean = {ci_mean:.2f}%, Median = {ci_median:.2f}%, "
+        f"95% CI = [{ci_lower:.2f}%, {ci_upper:.2f}%]. "
+        f"Розкид ±{(ci_upper - ci_lower) / 2:.1f}% відображає діапазон варіацій "
+        f"параметрів навколо базових значень (log-normal для latency, Beta для availability/continuity)."
+    )
 
 with tab_telemetry:
     if 'lat' in df.columns and 'lon' in df.columns:
