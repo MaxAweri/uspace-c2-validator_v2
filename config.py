@@ -26,11 +26,16 @@ def get_r_c2_threshold(sail_level: str) -> float:
     return R_C2_THRESHOLDS_BY_SAIL.get(sail_level, R_C2_THRESHOLD_PCT)
 
 # Metric Target Thresholds
-AVAILABILITY_TARGET = 0.98  # Research/Engineering target
-CONTINUITY_TARGET = 0.99    # Research/Engineering target
-INTEGRITY_TARGET = 0.995    # Research/Engineering target
-COMPLETENESS_TARGET = INTEGRITY_TARGET  # 0.995 (99.5% цільова повнота телеметрії)
-LATENCY_TARGET_MS = 500.0   # 500 ms
+# Джерело: SESAR U-space CONOPS 4th ed. (2023), Appendix G, Table 4 (p.19)
+# https://www.sesarju.eu/node/4544
+# REQ-DROC2OM-D21-PERF.0010: Availability ≥ 99.3%
+# REQ-DROC2OM-D21-PERF.0030: Integrity (Packet Error Rate ≤ 10⁻³) → 99.9%
+# CORUS-XUAM-035: UTM position latency ≤ 1000 ms
+AVAILABILITY_TARGET = 0.993     # REQ-DROC2OM-D21-PERF.0010 (CONOPS 4.0)
+CONTINUITY_TARGET = 0.999       # REQ-DROC2OM-D21-PERF.0030 (PER ≤ 10⁻³)
+INTEGRITY_TARGET = 0.999        # REQ-DROC2OM-D21-PERF.0030 (PER ≤ 10⁻³)
+COMPLETENESS_TARGET = INTEGRITY_TARGET  # 99.9% цільова повнота телеметрії
+LATENCY_TARGET_MS = 1000.0      # CORUS-XUAM-035 (UTM position latency)
 
 # Verdict Status Constants
 STATUS_PASS = "PASS (Технічним критеріям відповідає)"
